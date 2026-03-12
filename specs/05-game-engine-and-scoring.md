@@ -42,3 +42,13 @@ Required scoring categories:
 ## Acceptance criteria
 - Unit tests can simulate complete levels without MAUI.
 - The engine supports start delays, basin delays, split speed modifiers, and cross double-scoring rules.
+- All six `GamePhase` states are reachable and tested.
+- `Tick(elapsedMs)` is deterministic: same inputs always produce the same traversal order and score.
+- Integer-only transit time formula eliminates floating-point drift.
+- Code coverage for `Game.Core` remains at or above 80% line and branch.
+
+## Implementation notes
+- Engine classes live in `Domain/Engine/` within `HexMaster.FloodRush.Game.Core`.
+- `FlowBranch` is `internal`; `GameSession`, `GameBoard`, `PlacedPipe`, `ScoreBreakdown`, and `TraversalRecord` are public.
+- `[assembly: InternalsVisibleTo("HexMaster.FloodRush.Game.Core.Tests")]` is declared in `Properties/AssemblyInfo.cs`.
+- See `docs/game-engine-and-scoring.md` for the full design reference.
