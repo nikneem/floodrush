@@ -1,5 +1,6 @@
 using HexMaster.FloodRush.Game.Core.Domain.Board;
 using HexMaster.FloodRush.Game.Core.Domain.Levels;
+using HexMaster.FloodRush.Game.Core.Domain.Pipes;
 using HexMaster.FloodRush.Game.Core.Domain.Rules;
 using HexMaster.FloodRush.Game.Core.Domain.Tiles;
 
@@ -12,6 +13,7 @@ public sealed class LevelDefinitionTests
     {
         var exception = Assert.Throws<InvalidOperationException>(() => new LevelDefinition(
             "level-1",
+            "Level One",
             new BoardDimensions(3, 3),
             2000,
             new FlowSpeedIndicator(25),
@@ -27,6 +29,7 @@ public sealed class LevelDefinitionTests
 
         var exception = Assert.Throws<InvalidOperationException>(() => new LevelDefinition(
             "level-1",
+            "Level One",
             new BoardDimensions(3, 3),
             2000,
             new FlowSpeedIndicator(25),
@@ -44,6 +47,7 @@ public sealed class LevelDefinitionTests
     {
         var exception = Assert.Throws<InvalidOperationException>(() => new LevelDefinition(
             "level-2",
+            "Level Two",
             new BoardDimensions(3, 1),
             1000,
             new FlowSpeedIndicator(40),
@@ -101,6 +105,7 @@ public sealed class LevelDefinitionTests
     {
         var level = new LevelDefinition(
             "level-start",
+            "Level Start",
             new BoardDimensions(4, 2),
             1500,
             new FlowSpeedIndicator(30),
@@ -114,9 +119,81 @@ public sealed class LevelDefinitionTests
         Assert.Equal(3, level.FixedTiles.Count);
     }
 
+    [Fact]
+    public void SetInventoryRules_StoresRules()
+    {
+        var level = CreateValidLevel();
+        var rules = new[]
+        {
+            new PipeInventoryRule(PipeSectionType.Horizontal, 3),
+            new PipeInventoryRule(PipeSectionType.Vertical, 3)
+        };
+
+        level.SetInventoryRules(rules);
+
+        Assert.Equal(2, level.InventoryRules.Count);
+    }
+
+    [Fact]
+    public void SetInventoryRules_RejectsDuplicatePipeTypes()
+    {
+        var level = CreateValidLevel();
+        var rules = new[]
+        {
+            new PipeInventoryRule(PipeSectionType.Horizontal, 3),
+            new PipeInventoryRule(PipeSectionType.Horizontal, 5)
+        };
+
+        Assert.Throws<InvalidOperationException>(() => level.SetInventoryRules(rules));
+    }
+
+    [Fact]
+    public void SetScoringOverrides_StoresOverrides()
+    {
+        var level = CreateValidLevel();
+        var overrides = new[]
+        {
+            new PipeScoringOverride(PipeSectionType.Horizontal, 20),
+            new PipeScoringOverride(PipeSectionType.Cross, 30, 12)
+        };
+
+        level.SetScoringOverrides(overrides);
+
+        Assert.Equal(2, level.ScoringOverrides.Count);
+    }
+
+    [Fact]
+    public void SetScoringOverrides_RejectsDuplicatePipeTypes()
+    {
+        var level = CreateValidLevel();
+        var overrides = new[]
+        {
+            new PipeScoringOverride(PipeSectionType.Horizontal, 10),
+            new PipeScoringOverride(PipeSectionType.Horizontal, 20)
+        };
+
+        Assert.Throws<InvalidOperationException>(() => level.SetScoringOverrides(overrides));
+    }
+
+    [Fact]
+    public void SetDisplayName_UpdatesName()
+    {
+        var level = CreateValidLevel();
+        level.SetDisplayName("New Name");
+        Assert.Equal("New Name", level.DisplayName);
+    }
+
+    [Fact]
+    public void SetDisplayName_RejectsBlank()
+    {
+        var level = CreateValidLevel();
+        Assert.ThrowsAny<ArgumentException>(() => level.SetDisplayName(""));
+    }
+
     private static LevelDefinition CreateValidLevel() =>
         new(
             "level-valid",
+            "Level Valid",
             new BoardDimensions(4, 2),
             1500,
             new FlowSpeedIndicator(30),
