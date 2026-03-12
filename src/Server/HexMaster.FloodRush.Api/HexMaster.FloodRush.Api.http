@@ -1,0 +1,6 @@
+@HexMaster.FloodRush.Api_HostAddress = http://localhost:5279
+
+GET {{HexMaster.FloodRush.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
