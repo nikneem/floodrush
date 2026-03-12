@@ -8,6 +8,8 @@ The solution also includes a server that manages user profiles, released levels,
 Read `docs\product-vision-and-scope.md` for the plain-language product framing and `specs\01-product-vision-and-scope.md` for the implementation-oriented version.
 
 ## Current repository shape
+- `src\Game\HexMaster.FloodRush.Game` contains the .NET MAUI client application.
+- `src\Game\HexMaster.FloodRush.Game.Core` contains the platform-agnostic game domain and engine.
 - `src\Server\HexMaster.FloodRush.Api` contains the ASP.NET Core modular monolith host.
 - `src\Server\HexMaster.FloodRush.Server.Abstractions` contains CQRS interfaces and shared server-only helpers.
 - `src\Server\HexMaster.FloodRush.Server.Profiles` contains the profiles module and device authentication flow.
@@ -37,7 +39,15 @@ Read `docs\product-vision-and-scope.md` for the plain-language product framing a
 - A split section creates multiple active flows, can require multiple finish points, and applies a speed modifier only to downstream segments on split branches.
 - Each level defines a base flow speed indicator from 1 to 100.
 
-## Client expectations
+## MAUI styling rules
+- All colours must be defined in `Resources/Styles/Colors.xaml` as named resources and referenced by `{StaticResource}` key. Never hardcode hex values on pages or views.
+- All element styles (buttons, labels, cards, pages) must be defined in `Resources/Styles/Styles.xaml`.
+- Default button (implicit style) → amber gradient primary. Override with `Style="{StaticResource SecondaryButtonStyle}"` or `DangerButtonStyle`.
+- New pages must use `Shell.NavBarIsVisible="False"` and be registered as a route in `AppShell.xaml.cs` and `AppRoutes.cs`.
+- New ViewModels must extend `BaseViewModel` and be registered as transient in `MauiProgram.cs`; pages are also transient.
+- ViewModels must navigate via `INavigationService` injection — no direct `Shell.Current` usage in ViewModels.
+
+
 - The MAUI client must run in landscape only.
 - The client is offline-first: gameplay, settings, and cached levels must continue to work without connectivity.
 - When connectivity is available, local state syncs with the server without losing offline progress.

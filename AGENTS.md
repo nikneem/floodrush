@@ -13,11 +13,21 @@ The `docs\` folder contains the higher-level product framing. Read `docs\product
 - `src\Server\HexMaster.FloodRush.Server.Scores` - scores module.
 - `src\Shared\HexMaster.FloodRush.Shared.Contracts` - shared client/server contracts.
 - `src\Aspire\HexMaster.FloodRush.Aspire` - local orchestration and service defaults.
-- `src\Game` - intended location for the MAUI client and related game projects.
+- `src\Game\HexMaster.FloodRush.Game` - .NET MAUI client application.
+- `src\Game\HexMaster.FloodRush.Game.Core` - platform-agnostic game domain and engine.
 - `docs` - human-friendly product and project documentation derived from the numbered specs.
 - `specs` - ordered product and engineering specifications.
 
-## Working agreements
+## MAUI client guidance
+- All colours live in `Resources/Styles/Colors.xaml`; reference by key — never hardcode colours on pages.
+- All element styles (buttons, labels, cards, pages) live in `Resources/Styles/Styles.xaml`.
+- Primary button style: amber gradient `#ffc55a` → `#e8a030`; style key `PrimaryButtonStyle` (implicit default for all buttons).
+- Secondary button style: navy gradient `#1a5a9e` → `#134573`; style key `SecondaryButtonStyle`.
+- Danger button style: red gradient `#e74c3c` → `#c0392b`; style key `DangerButtonStyle`.
+- Navigation is centralised in `Services/AppRoutes.cs` and `Services/INavigationService`; ViewModels must not reference `Shell` directly.
+- All pages receive their ViewModel via DI constructor injection; register in `MauiProgram.cs`.
+- `Shell.NavBarIsVisible="False"` and `Shell.TabBarIsVisible="False"` on all pages — no visible shell chrome.
+- The device is locked to landscape: Android via `ScreenOrientation.Landscape`, iOS via `Info.plist`.
 - Target .NET 10 and the latest C# version for all new projects unless a spec states otherwise.
 - Keep the MAUI client landscape-only.
 - Treat the client as offline-first. Local play must remain functional when the server is unavailable.

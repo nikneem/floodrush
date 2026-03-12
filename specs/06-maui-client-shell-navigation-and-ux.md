@@ -41,3 +41,17 @@ The welcome page must contain:
 ## Acceptance criteria
 - A new player can navigate from the welcome page into a playable level without confusion.
 - Orientation behavior is enforced on supported mobile targets.
+- All button styles (primary, secondary, danger) are defined in `Resources/Styles/Styles.xaml` and applied via style keys — no inline color or gradient declarations on individual pages.
+- All colours are defined in `Resources/Styles/Colors.xaml` and referenced by key.
+- The `Play` button text changes to `Continue` when local progress exists.
+- All pages use the dark game theme (deep navy background, amber accents).
+- DI wires ViewModels to pages via constructor injection with no service-locator patterns.
+
+## Implementation notes
+- MAUI project: `src/Game/HexMaster.FloodRush.Game/`
+- Navigation routes: `Services/AppRoutes.cs` — all Shell routing centralised here
+- Colour palette anchor: Primary `#f5b442`, Secondary `#134573`
+- Button gradient brushes: `PrimaryButtonGradientBrush` and `SecondaryButtonGradientBrush` in `Colors.xaml`
+- Implicit `Button` style defaults to `PrimaryButtonStyle`; use `Style="{StaticResource SecondaryButtonStyle}"` to override
+- Landscape lock: Android `ScreenOrientation.Landscape` in `MainActivity`; iOS `Info.plist` landscape-only
+- See `docs/maui-client-shell-and-navigation.md` for full design reference
