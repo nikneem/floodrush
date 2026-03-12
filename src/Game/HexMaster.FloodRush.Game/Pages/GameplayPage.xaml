@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HexMaster.FloodRush.Game.ViewModels"
+             xmlns:views="clr-namespace:HexMaster.FloodRush.Game.Views"
+             x:Class="HexMaster.FloodRush.Game.Pages.GameplayPage"
+             Shell.NavBarIsVisible="False">
+    <ContentPage.Background>
+        <SolidColorBrush Color="{StaticResource AppBackground}"/>
+    </ContentPage.Background>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- HUD header row -->
+        <Border Grid.Row="0"
+                Background="{StaticResource SurfaceBackgroundBrush}"
+                Padding="16,8">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                <Label Grid.Column="0"
+                       Text="{Binding LevelId, StringFormat='Level: {0}'}"
+                       Style="{StaticResource SectionHeadingStyle}"
+                       FontSize="16"
+                       VerticalOptions="Center"/>
+
+                <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                             VerticalOptions="Center" Margin="0,0,24,0">
+                    <Label Text="Prep: " Style="{StaticResource MutedTextStyle}" FontSize="14"/>
+                    <Label Text="{Binding RemainingPrepSeconds, StringFormat='{0}s'}"
+                           TextColor="{StaticResource BrandAmber}"
+                           FontAttributes="Bold"
+                           FontSize="14"/>
+                </StackLayout>
+
+                <StackLayout Grid.Column="2" Orientation="Horizontal" Spacing="4"
+                             VerticalOptions="Center" Margin="0,0,24,0">
+                    <Label Text="Score: " Style="{StaticResource MutedTextStyle}" FontSize="14"/>
+                    <Label Text="{Binding Score}"
+                           TextColor="{StaticResource BrandAmber}"
+                           FontAttributes="Bold"
+                           FontSize="14"/>
+                </StackLayout>
+
+                <Button Grid.Column="3"
+                        Text="⏸"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Padding="12,6"
+                        FontSize="18"
+                        Command="{Binding PauseCommand}"/>
+            </Grid>
+        </Border>
+
+        <!-- Game board area (placeholder) -->
+        <Grid Grid.Row="1">
+            <Border Background="{StaticResource CardBackgroundBrush}"
+                    Margin="16"
+                    StrokeShape="RoundRectangle 8">
+                <Border.Stroke>
+                    <SolidColorBrush Color="{StaticResource SecondaryLight}"/>
+                </Border.Stroke>
+                <Label Text="Game Board"
+                       Style="{StaticResource MutedTextStyle}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       FontSize="20"/>
+            </Border>
+
+            <!-- Pause overlay -->
+            <views:PauseResultOverlay
+                BindingContext="{Binding}"
+                IsVisible="{Binding IsPaused}"/>
+            <!-- Game over overlay -->
+            <views:PauseResultOverlay
+                BindingContext="{Binding}"
+                IsVisible="{Binding IsGameOver}"/>
+        </Grid>
+    </Grid>
+</ContentPage>

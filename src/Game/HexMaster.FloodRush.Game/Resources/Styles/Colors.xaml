@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- FloodRush brand colors -->
+    <Color x:Key="BrandAmber">#f5b442</Color>
+    <Color x:Key="BrandAmberDark">#c8892b</Color>
+    <Color x:Key="BrandAmberLight">#ffd07a</Color>
+    <Color x:Key="BrandNavy">#134573</Color>
+    <Color x:Key="BrandNavyDark">#0d2e4e</Color>
+    <Color x:Key="BrandNavyLight">#1a5a9e</Color>
+
+    <Color x:Key="Primary">#f5b442</Color>
+    <Color x:Key="PrimaryDark">#c8892b</Color>
+    <Color x:Key="PrimaryLight">#ffd07a</Color>
+    <Color x:Key="Secondary">#134573</Color>
+    <Color x:Key="SecondaryDark">#0d2e4e</Color>
+    <Color x:Key="SecondaryLight">#1a5a9e</Color>
+
+    <Color x:Key="AppBackground">#0d1b2a</Color>
+    <Color x:Key="SurfaceBackground">#1a2f45</Color>
+    <Color x:Key="CardBackground">#1e3650</Color>
+    <Color x:Key="CardBackgroundElevated">#243f5e</Color>
+
+    <Color x:Key="TextPrimary">#f0f0f0</Color>
+    <Color x:Key="TextSecondary">#a0b4c8</Color>
+    <Color x:Key="TextMuted">#607080</Color>
+    <Color x:Key="TextOnPrimary">#1a1000</Color>
+    <Color x:Key="TextOnSecondary">#ffffff</Color>
+
+    <Color x:Key="Success">#2ecc71</Color>
+    <Color x:Key="Warning">#f39c12</Color>
+    <Color x:Key="Danger">#e74c3c</Color>
+    <Color x:Key="Info">#3498db</Color>
+
+    <Color x:Key="White">White</Color>
+    <Color x:Key="Black">Black</Color>
+    <Color x:Key="Gray100">#E1E1E1</Color>
+    <Color x:Key="Gray200">#C8C8C8</Color>
+    <Color x:Key="Gray300">#ACACAC</Color>
+    <Color x:Key="Gray400">#919191</Color>
+    <Color x:Key="Gray500">#6E6E6E</Color>
+    <Color x:Key="Gray600">#404040</Color>
+    <Color x:Key="Gray900">#212121</Color>
+    <Color x:Key="Gray950">#141414</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="{StaticResource AppBackground}"/>
+    <SolidColorBrush x:Key="SurfaceBackgroundBrush" Color="{StaticResource SurfaceBackground}"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{StaticResource CardBackground}"/>
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
+
+    <LinearGradientBrush x:Key="AppBackgroundGradientBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#0d1b2a" Offset="0"/>
+        <GradientStop Color="#102035" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="PrimaryButtonGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#ffc55a" Offset="0"/>
+        <GradientStop Color="#e8a030" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="SecondaryButtonGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#1a5a9e" Offset="0"/>
+        <GradientStop Color="#134573" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="DangerButtonGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#e74c3c" Offset="0"/>
+        <GradientStop Color="#c0392b" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="CardGradientBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#243f5e" Offset="0"/>
+        <GradientStop Color="#1e3650" Offset="1"/>
+    </LinearGradientBrush>
+</ResourceDictionary>

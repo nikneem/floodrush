@@ -5,6 +5,7 @@
   </Folder>
   <Folder Name="/Game/">
     <Project Path="Game/HexMaster.FloodRush.Game.Core/HexMaster.FloodRush.Game.Core.csproj" />
+    <Project Path="Game/HexMaster.FloodRush.Game/HexMaster.FloodRush.Game.csproj" />
   </Folder>
   <Folder Name="/Server/">
     <Project Path="Server/HexMaster.FloodRush.Api/HexMaster.FloodRush.Api.csproj" />

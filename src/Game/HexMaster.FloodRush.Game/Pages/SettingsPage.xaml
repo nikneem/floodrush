@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HexMaster.FloodRush.Game.ViewModels"
+             x:Class="HexMaster.FloodRush.Game.Pages.SettingsPage"
+             Shell.NavBarIsVisible="False">
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#0d1b2a" Offset="0"/>
+            <GradientStop Color="#102035" Offset="1"/>
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid RowDefinitions="Auto,*" Padding="24,16">
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,16">
+            <Button Grid.Column="0"
+                    Text="← Back"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding BackCommand}"
+                    Padding="16,10"/>
+            <Label Grid.Column="1"
+                   Text="Settings"
+                   Style="{StaticResource SectionHeadingStyle}"
+                   VerticalOptions="Center"
+                   Margin="16,0"/>
+        </Grid>
+
+        <!-- Settings content in two columns -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="24">
+            <!-- Left column: Profile -->
+            <Border Grid.Column="0" Style="{StaticResource GameCardStyle}" VerticalOptions="Start">
+                <StackLayout Spacing="16">
+                    <Label Text="Player Profile" Style="{StaticResource SectionHeadingStyle}"/>
+                    <Label Text="Display Name" Style="{StaticResource MutedTextStyle}"/>
+                    <Entry Text="{Binding PlayerName}"
+                           Placeholder="Enter your name"
+                           PlaceholderColor="{StaticResource TextMuted}"
+                           TextColor="{StaticResource TextPrimary}"
+                           BackgroundColor="{StaticResource SurfaceBackground}"
+                           Margin="0"
+                           HeightRequest="44"/>
+                    <Button Text="Save Name"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Command="{Binding SavePlayerNameCommand}"
+                            HorizontalOptions="Start"/>
+                </StackLayout>
+            </Border>
+
+            <!-- Right column: Game settings + danger zone -->
+            <StackLayout Grid.Column="1" Spacing="16">
+                <Border Style="{StaticResource GameCardStyle}">
+                    <StackLayout Spacing="16">
+                        <Label Text="Game Settings" Style="{StaticResource SectionHeadingStyle}"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="Sound Effects" VerticalOptions="Center"/>
+                            <Switch Grid.Column="1" IsToggled="{Binding SoundEnabled}"
+                                    OnColor="{StaticResource BrandAmber}"
+                                    ThumbColor="{StaticResource TextPrimary}"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="Music" VerticalOptions="Center"/>
+                            <Switch Grid.Column="1" IsToggled="{Binding MusicEnabled}"
+                                    OnColor="{StaticResource BrandAmber}"
+                                    ThumbColor="{StaticResource TextPrimary}"/>
+                        </Grid>
+                    </StackLayout>
+                </Border>
+
+                <Border Style="{StaticResource GameCardStyle}">
+                    <StackLayout Spacing="12">
+                        <Label Text="Danger Zone" TextColor="{StaticResource Danger}"
+                               Style="{StaticResource SectionHeadingStyle}"/>
+                        <Label Text="This will erase all local progress and cannot be undone."
+                               Style="{StaticResource MutedTextStyle}"/>
+                        <Button Text="Reset Progress"
+                                Style="{StaticResource DangerButtonStyle}"
+                                Command="{Binding ResetProgressCommand}"
+                                HorizontalOptions="Start"/>
+                    </StackLayout>
+                </Border>
+            </StackLayout>
+        </Grid>
+    </Grid>
+</ContentPage>

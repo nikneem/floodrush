@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Button Styles -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource TextOnPrimary}"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="32,16"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontAttributes" Value="Bold"/>
+        <Setter Property="MinimumWidthRequest" Value="200"/>
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#ffc55a" Offset="0"/>
+                    <GradientStop Color="#e8a030" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource TextOnSecondary}"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="32,16"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontAttributes" Value="Bold"/>
+        <Setter Property="MinimumWidthRequest" Value="200"/>
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#1a5a9e" Offset="0"/>
+                    <GradientStop Color="#134573" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DangerButtonStyle" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource TextOnSecondary}"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="32,16"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#e74c3c" Offset="0"/>
+                    <GradientStop Color="#c0392b" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Implicit Button defaults to Primary -->
+    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}"/>
+
+    <!-- Label Styles -->
+    <Style x:Key="PageTitleStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="42"/>
+        <Setter Property="FontAttributes" Value="Bold"/>
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <Style x:Key="PageSubtitleStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="TextColor" Value="{StaticResource TextSecondary}"/>
+    </Style>
+
+    <Style x:Key="SectionHeadingStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontAttributes" Value="Bold"/>
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <Style x:Key="BodyTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <Style x:Key="MutedTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="TextColor" Value="{StaticResource TextMuted}"/>
+    </Style>
+
+    <!-- Implicit Label -->
+    <Style TargetType="Label">
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <!-- Card / Border Styles -->
+    <Style x:Key="GameCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource CardGradientBrush}"/>
+        <Setter Property="StrokeShape" Value="RoundRectangle 12"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+        <Setter Property="Padding" Value="16"/>
+    </Style>
+
+    <Style x:Key="StatusBadgeStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 20"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}"/>
+    </Style>
+
+    <!-- Page Styles -->
+    <Style x:Key="GamePageStyle" TargetType="ContentPage">
+        <Setter Property="BackgroundColor" Value="{StaticResource AppBackground}"/>
+    </Style>
+
+    <Style TargetType="ContentPage" BasedOn="{StaticResource GamePageStyle}"/>
+
+    <!-- Entry / Input Styles -->
+    <Style x:Key="GameInputStyle" TargetType="Entry">
+        <Setter Property="BackgroundColor" Value="{StaticResource SurfaceBackground}"/>
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="PlaceholderColor" Value="{StaticResource TextMuted}"/>
+    </Style>
+
+    <Style TargetType="Entry" BasedOn="{StaticResource GameInputStyle}"/>
+
+</ResourceDictionary>
