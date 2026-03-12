@@ -39,6 +39,15 @@ Each level definition must include:
 - The sync system should fetch newly released levels without requiring a full data reset.
 
 ## Acceptance criteria
-- Level data is rich enough to build the board and simulate flow.
-- The client can distinguish local cache state from server release state.
-- Score entries can always be traced to a concrete level revision.
+- `LevelDefinition` carries `DisplayName`, `InventoryRules`, and `ScoringOverrides` in addition to the core board data.
+- `PipeInventoryRule` enforces a positive `MaxCount`; null means unlimited.
+- `PipeScoringOverride` only allows `SecondaryTraversalBonusPoints > 0` for the `Cross` pipe type.
+- Duplicate pipe types in `InventoryRules` or `ScoringOverrides` are rejected.
+- `LevelRevisionToken` is an immutable, equality-comparable value object; `New()` generates a unique token.
+- `LevelRevision` is an immutable snapshot (no setters after construction) combining a definition, metadata, and token.
+- `LevelMetadata` validates: non-blank display name; valid difficulty enum; positive par score if set; `ReleasedUntil` requires `ReleasedFrom`; `ReleasedUntil` must be after `ReleasedFrom`.
+- `ReleasedLevel.CacheStatus` is derived: `NotDownloaded` / `Cached` / `Obsolete`.
+- `SetCachedRevision` rejects a revision whose `LevelId` does not match the `ReleasedLevel.LevelId`.
+- Score entries can always be traced to a concrete `LevelRevisionToken`.
+- All new domain types are covered by unit tests; overall `Game.Core` line coverage ≥ 80%.
+- `docs/level-format-and-release-progression.md` documents the full design.

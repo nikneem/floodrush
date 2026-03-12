@@ -1,5 +1,6 @@
 using HexMaster.FloodRush.Game.Core.Domain.Board;
 using HexMaster.FloodRush.Game.Core.Domain.Common;
+using HexMaster.FloodRush.Game.Core.Domain.Pipes;
 using HexMaster.FloodRush.Game.Core.Domain.Rules;
 using HexMaster.FloodRush.Game.Core.Domain.Tiles;
 
@@ -8,25 +9,35 @@ namespace HexMaster.FloodRush.Game.Core.Domain.Levels;
 public sealed class LevelDefinition
 {
     private readonly List<FixedTile> fixedTiles = [];
+    private readonly List<PipeInventoryRule> inventoryRules = [];
+    private readonly List<PipeScoringOverride> scoringOverrides = [];
     private BoardDimensions boardDimensions;
     private FlowSpeedIndicator flowSpeedIndicator;
 
     public LevelDefinition(
         string levelId,
+        string displayName,
         BoardDimensions boardDimensions,
         int startDelayMilliseconds,
         FlowSpeedIndicator flowSpeedIndicator,
-        IEnumerable<FixedTile> fixedTiles)
+        IEnumerable<FixedTile> fixedTiles,
+        IEnumerable<PipeInventoryRule>? inventoryRules = null,
+        IEnumerable<PipeScoringOverride>? scoringOverrides = null)
     {
         this.boardDimensions = Guard.AgainstNull(boardDimensions, nameof(boardDimensions)).Clone();
         this.flowSpeedIndicator = Guard.AgainstNull(flowSpeedIndicator, nameof(flowSpeedIndicator)).Clone();
 
         SetLevelId(levelId);
+        SetDisplayName(displayName);
         StartDelayMilliseconds = Guard.AgainstNegative(startDelayMilliseconds, nameof(startDelayMilliseconds));
         SetFixedTiles(fixedTiles);
+        SetInventoryRules(inventoryRules ?? []);
+        SetScoringOverrides(scoringOverrides ?? []);
     }
 
     public string LevelId { get; private set; } = string.Empty;
+
+    public string DisplayName { get; private set; } = string.Empty;
 
     public BoardDimensions BoardDimensions
     {
@@ -44,8 +55,17 @@ public sealed class LevelDefinition
 
     public IReadOnlyCollection<FixedTile> FixedTiles => fixedTiles.Select(static tile => tile.Clone()).ToArray();
 
+    /// <summary>Per-type placement limits. Empty means all types are unlimited.</summary>
+    public IReadOnlyCollection<PipeInventoryRule> InventoryRules => inventoryRules.Select(r => r.Clone()).ToArray();
+
+    /// <summary>Per-level scoring overrides for pipe types. Empty means default scoring applies.</summary>
+    public IReadOnlyCollection<PipeScoringOverride> ScoringOverrides => scoringOverrides.Select(o => o.Clone()).ToArray();
+
     public void SetLevelId(string levelId) =>
         LevelId = Guard.AgainstNullOrWhiteSpace(levelId, nameof(levelId));
+
+    public void SetDisplayName(string displayName) =>
+        DisplayName = Guard.AgainstNullOrWhiteSpace(displayName, nameof(displayName));
 
     public void SetBoardDimensions(BoardDimensions boardDimensions)
     {
@@ -86,6 +106,50 @@ public sealed class LevelDefinition
         var candidateTiles = CloneTiles(fixedTiles);
         candidateTiles.Add(Guard.AgainstNull(fixedTile, nameof(fixedTile)).Clone());
         SetFixedTiles(candidateTiles);
+    }
+
+    public void SetInventoryRules(IEnumerable<PipeInventoryRule> rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        var candidates = rules.Select(r => Guard.AgainstNull(r, nameof(rules)).Clone()).ToList();
+        EnsureNoDuplicatePipeTypes(candidates);
+        inventoryRules.Clear();
+        inventoryRules.AddRange(candidates);
+    }
+
+    public void SetScoringOverrides(IEnumerable<PipeScoringOverride> overrides)
+    {
+        ArgumentNullException.ThrowIfNull(overrides);
+        var candidates = overrides.Select(o => Guard.AgainstNull(o, nameof(overrides)).Clone()).ToList();
+        EnsureNoDuplicateScoringTypes(candidates);
+        scoringOverrides.Clear();
+        scoringOverrides.AddRange(candidates);
+    }
+
+    private static void EnsureNoDuplicatePipeTypes(IEnumerable<PipeInventoryRule> rules)
+    {
+        var seen = new HashSet<PipeSectionType>();
+        foreach (var rule in rules)
+        {
+            if (!seen.Add(rule.PipeSectionType))
+            {
+                throw new InvalidOperationException(
+                    $"Duplicate inventory rule for pipe type '{rule.PipeSectionType}'.");
+            }
+        }
+    }
+
+    private static void EnsureNoDuplicateScoringTypes(IEnumerable<PipeScoringOverride> overrides)
+    {
+        var seen = new HashSet<PipeSectionType>();
+        foreach (var o in overrides)
+        {
+            if (!seen.Add(o.PipeSectionType))
+            {
+                throw new InvalidOperationException(
+                    $"Duplicate scoring override for pipe type '{o.PipeSectionType}'.");
+            }
+        }
     }
 
     private static List<FixedTile> CloneTiles(IEnumerable<FixedTile> fixedTiles)
