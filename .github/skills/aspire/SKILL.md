@@ -7,6 +7,15 @@ description: "**WORKFLOW SKILL** - Orchestrates Aspire applications using the As
 
 This repository is set up to use Aspire. Aspire is an orchestrator for the entire application and will take care of configuring dependencies, building, and running the application. The resources that make up the application are defined in `apphost.cs` including application code and external dependencies.
 
+In FloodRush, Aspire is primarily used to support the server side of the product vision: local orchestration of the modular monolith API and its storage dependencies while the game remains a landscape-only, offline-first .NET MAUI client.
+
+## FloodRush-specific context
+
+- The product scope is documented in `docs\product-vision-and-scope.md`.
+- The server lives under `src\Server` and uses a modular monolith structure.
+- Azure Table Storage is the default local persistence dependency for server modules and is orchestrated through the AppHost.
+- Shared contracts live under `src\Shared\HexMaster.FloodRush.Shared.Contracts`.
+
 ## General recommendations for working with Aspire
 
 1. Before making any changes always run the apphost using `aspire run` and inspect the state of resources to make sure you are building from a known state.

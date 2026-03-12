@@ -5,10 +5,18 @@ FloodRush is a landscape-only .NET MAUI puzzle game built on .NET 10 and the lat
 
 The solution also includes a server that manages user profiles, released levels, level downloads, score submission, and synchronization of offline progress.
 
+Read `docs\product-vision-and-scope.md` for the plain-language product framing and `specs\01-product-vision-and-scope.md` for the implementation-oriented version.
+
 ## Current repository shape
-- `src\Server\HexMaster.FloodRush.Api` contains the ASP.NET Core API.
+- `src\Server\HexMaster.FloodRush.Api` contains the ASP.NET Core modular monolith host.
+- `src\Server\HexMaster.FloodRush.Server.Abstractions` contains CQRS interfaces and shared server-only helpers.
+- `src\Server\HexMaster.FloodRush.Server.Profiles` contains the profiles module and device authentication flow.
+- `src\Server\HexMaster.FloodRush.Server.Levels` contains the levels module.
+- `src\Server\HexMaster.FloodRush.Server.Scores` contains the scores module.
+- `src\Shared\HexMaster.FloodRush.Shared.Contracts` contains client/server shared contracts.
 - `src\Aspire\HexMaster.FloodRush.Aspire` contains local orchestration projects.
 - `src\Game` exists in the solution as a placeholder folder and is the intended home for the .NET MAUI client.
+- `docs` contains product and project documentation derived from the numbered specs.
 - `specs` contains the implementation specifications and is the source of truth for product behavior until code catches up.
 
 ## Preferred implementation order
@@ -36,21 +44,29 @@ The solution also includes a server that manages user profiles, released levels,
 - The welcome screen exposes `Play` or `Continue`, `Load Level`, and `Settings`.
 - `Play` changes to `Continue` when local progress already exists.
 - `Load Level` must only show levels released to the signed-in or local player profile.
+- The initial product stays focused on single-player puzzle gameplay and explicitly excludes multiplayer, user-generated levels, in-game editing, social systems, and monetization.
 
 ## Server expectations
 - Favor explicit contracts and versionable DTOs.
 - Keep API endpoints aligned with the offline sync model: profile sync, level catalog sync, level download, score upload, and settings sync.
 - Treat release state and score integrity as server-owned concerns.
+- Implement the server as a modular monolith with one project per module.
+- Use feature slices and CQRS in server modules: each feature namespace should own its command or query and its handler.
+- Keep server-only shared code in `src\Server`; keep only client/server shared contracts in `src\Shared`.
+- Use Azure Table Storage for server persistence and orchestrate local development storage through Aspire.
 
 ## Coding guidance
 - Reuse shared domain types instead of duplicating board or scoring rules.
 - Keep flow simulation deterministic and testable without UI dependencies.
 - Separate game engine logic from MAUI views and platform-specific services.
+- Use pragmatic DDD in the core game domain: prefer explicit domain models with public getters, private setters, and validated `Set{Property}` methods instead of loose bags of primitives.
 - Model offline data with sync metadata such as timestamps, version tokens, and pending operations.
 - Prefer small, composable services over large manager classes.
+- Maintain at least 80% code coverage for the core projects: `HexMaster.FloodRush.Game.Core`, `HexMaster.FloodRush.Server.Profiles`, `HexMaster.FloodRush.Server.Levels`, and `HexMaster.FloodRush.Server.Scores`.
 
 ## When adding code
 - Read the relevant numbered spec first and implement to the spec instead of inventing behavior.
+- Check `docs\` when you need product context or contributor-facing documentation updates.
 - Update the spec when behavior intentionally changes.
-- Add tests for game rules, scoring, branching flow, offline sync logic, and API contracts.
+- Add or update unit tests for core logic and keep the 80% coverage target intact for the core projects.
 - Keep user-visible text and terminology consistent: use `fluid basin`, `split section`, `finish point`, and `flow speed indicator`.

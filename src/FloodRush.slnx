@@ -3,7 +3,9 @@
     <Project Path="Aspire/HexMaster.FloodRush.Aspire/HexMaster.FloodRush.Aspire.AppHost/HexMaster.FloodRush.Aspire.AppHost.csproj" Id="53a7756e-86aa-4144-b9a4-b82d15c6e1cb" />
     <Project Path="Aspire/HexMaster.FloodRush.Aspire/HexMaster.FloodRush.Aspire.ServiceDefaults/HexMaster.FloodRush.Aspire.ServiceDefaults.csproj" />
   </Folder>
-  <Folder Name="/Game/" />
+  <Folder Name="/Game/">
+    <Project Path="Game/HexMaster.FloodRush.Game.Core/HexMaster.FloodRush.Game.Core.csproj" />
+  </Folder>
   <Folder Name="/Server/">
     <Project Path="Server/HexMaster.FloodRush.Api/HexMaster.FloodRush.Api.csproj" />
     <Project Path="Server/HexMaster.FloodRush.Server.Abstractions/HexMaster.FloodRush.Server.Abstractions.csproj" />
@@ -13,5 +15,8 @@
   </Folder>
   <Folder Name="/Shared/">
     <Project Path="Shared/HexMaster.FloodRush.Shared.Contracts/HexMaster.FloodRush.Shared.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/HexMaster.FloodRush.Game.Core.Tests/HexMaster.FloodRush.Game.Core.Tests.csproj" />
   </Folder>
 </Solution>

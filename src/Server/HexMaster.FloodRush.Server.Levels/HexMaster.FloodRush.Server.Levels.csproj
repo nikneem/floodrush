@@ -6,4 +6,17 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HexMaster.FloodRush.Server.Abstractions\HexMaster.FloodRush.Server.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Shared\HexMaster.FloodRush.Shared.Contracts\HexMaster.FloodRush.Shared.Contracts.csproj" />
+  </ItemGroup>
+
 </Project>

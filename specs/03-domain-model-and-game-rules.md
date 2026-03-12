@@ -3,6 +3,14 @@
 ## Objective
 Define the core game concepts and immutable rules used by both gameplay and persistence.
 
+## Domain modeling approach
+- Use pragmatic DDD for the game domain.
+- Model important game concepts explicitly instead of passing around loose primitives everywhere.
+- Prefer public getters with private setters for mutable domain objects.
+- Expose intentional mutation through `Set{Property}` methods or similarly explicit behavior methods.
+- Validate every incoming value before state changes so domain objects remain valid after construction and after mutation.
+- Avoid dogmatic layering or ceremony when a smaller model communicates the rules more clearly.
+
 ## Board concepts
 - The level board is a rectangular grid.
 - Each cell may contain empty space, a fixed tile, or a player-placeable pipe tile.
@@ -58,3 +66,4 @@ Define the core game concepts and immutable rules used by both gameplay and pers
 ## Acceptance criteria
 - The domain model can express every tile and rule described in the product brief.
 - Validation catches impossible or malformed level definitions before play begins.
+- Domain objects preserve their invariants through validated mutation methods.

@@ -1,5 +1,11 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddProject<Projects.HexMaster_FloodRush_Api>("hexmaster-floodrush-api");
+var tables = builder.AddAzureStorage("floodrushstorage")
+    .RunAsEmulator()
+    .AddTables("floodrushtables");
+
+builder.AddProject<Projects.HexMaster_FloodRush_Api>("hexmaster-floodrush-api")
+    .WithReference(tables)
+    .WaitFor(tables);
 
 builder.Build().Run();

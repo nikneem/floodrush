@@ -7,12 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
+    <ProjectReference Include="..\..\Aspire\HexMaster.FloodRush.Aspire\HexMaster.FloodRush.Aspire.ServiceDefaults\HexMaster.FloodRush.Aspire.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\HexMaster.FloodRush.Server.Levels\HexMaster.FloodRush.Server.Levels.csproj" />
+    <ProjectReference Include="..\HexMaster.FloodRush.Server.Profiles\HexMaster.FloodRush.Server.Profiles.csproj" />
+    <ProjectReference Include="..\HexMaster.FloodRush.Server.Scores\HexMaster.FloodRush.Server.Scores.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Aspire\HexMaster.FloodRush.Aspire\HexMaster.FloodRush.Aspire.ServiceDefaults\HexMaster.FloodRush.Aspire.ServiceDefaults.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
   </ItemGroup>
 
 </Project>
