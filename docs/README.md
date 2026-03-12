@@ -10,6 +10,7 @@ This folder contains the human-friendly product and project documentation for Fl
 - `level-format-and-release-progression.md` - spec 4: level payload, revision tokens, cache states, release gating
 - `game-engine-and-scoring.md` - spec 5: deterministic simulation engine, phases, scoring, basin/split/cross mechanics
 - `maui-client-shell-and-navigation.md` - spec 6: MAUI app structure, navigation, colour system, button/page styles
+- `gameplay-ui-and-pipe-controls.md` - spec 11: pipe tile controls, placement stack, flow animation, playfield grid, event chain
 - `gameplay-pillars.md` - the core gameplay promises that should remain stable as the game evolves
 - `roadmap-overview.md` - the implementation-oriented view of what comes after the initial product definition
 

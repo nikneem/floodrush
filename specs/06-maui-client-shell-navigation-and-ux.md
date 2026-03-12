@@ -27,11 +27,40 @@ The welcome page must contain:
 - Settings page
 - Optional sync status indicator
 
-## UX expectations
+## Gameplay screen layout
+
+The active gameplay screen uses a fixed three-zone landscape layout:
+
+- **HUD strip** — top bar showing level name, current score, flow speed indicator, and the pre-flow countdown timer.
+- **Pipe stack sidebar** — left column (~80–100 dp) showing the 10 upcoming pipe sections. The bottom item is highlighted as "next to place".
+- **Playfield grid** — remaining width; the level board with fixed tiles and player-placed pipes.
+
+## Pipe placement stack
+
+- The stack always contains exactly 10 items.
+- The **bottom item** is placed when the player taps a valid cell.
+- After placement, remaining items shift down and a new item is appended at the top.
+- Items are drawn randomly from the level's `PipeInventoryRule` pool, respecting any `MaxCount` limits.
+- All 10 items are pre-populated at level load, before the start countdown begins.
+
+## Tap-to-place mechanic
+
+- Tapping an **empty or unlocked** cell places the current bottom stack item.
+- Tapping a cell with an existing (unlocked) pipe **replaces** it.
+- Locked cells (flow has reached them) and fixed tiles cannot be tapped.
+- The bottom stack item is consumed immediately; there is no drag-and-drop.
+
 - The gameplay board should maximize usable horizontal space.
 - The player must be able to distinguish fixed tiles from placeable pipes clearly.
 - Flow speed, remaining preparation time, and required finish points should be visible during play.
 - Offline availability and sync state should be understandable without blocking gameplay.
+- The pipe stack must always show exactly 10 upcoming items; the bottom item must be visually distinct.
+- Start and finish point tiles must display directional indicators to guide pipe placement.
+
+## Related specification
+- See **spec 11** (`11-gameplay-ui-and-pipe-controls.md`) for the full pipe control API, flow animation contract, event chain, and component file locations.
+- See `docs/gameplay-ui-and-pipe-controls.md` for the human-readable design reference.
+
 
 ## Accessibility
 - Use clear color and shape differences for tile types.
