@@ -9,6 +9,7 @@
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Padding" Value="32,16"/>
         <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontFamily" Value="PatrickHand"/>
         <Setter Property="FontAttributes" Value="Bold"/>
         <Setter Property="MinimumWidthRequest" Value="200"/>
         <Setter Property="Background">
@@ -26,6 +27,7 @@
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Padding" Value="32,16"/>
         <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontFamily" Value="PatrickHand"/>
         <Setter Property="FontAttributes" Value="Bold"/>
         <Setter Property="MinimumWidthRequest" Value="200"/>
         <Setter Property="Background">
@@ -43,6 +45,7 @@
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Padding" Value="32,16"/>
         <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontFamily" Value="PatrickHand"/>
         <Setter Property="Background">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
@@ -56,36 +59,52 @@
     <!-- Implicit Button defaults to Primary -->
     <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}"/>
 
-    <!-- Label Styles -->
+    <!-- Label Styles — Headings use Peralta, body uses PatrickHand -->
+    <Style x:Key="GameTitleStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="Peralta"/>
+        <Setter Property="FontSize" Value="64"/>
+        <Setter Property="TextColor" Value="{StaticResource BrandAmber}"/>
+    </Style>
+
     <Style x:Key="PageTitleStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="Peralta"/>
         <Setter Property="FontSize" Value="42"/>
-        <Setter Property="FontAttributes" Value="Bold"/>
         <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
     </Style>
 
     <Style x:Key="PageSubtitleStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="PatrickHand"/>
         <Setter Property="FontSize" Value="18"/>
         <Setter Property="TextColor" Value="{StaticResource TextSecondary}"/>
     </Style>
 
     <Style x:Key="SectionHeadingStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="Peralta"/>
         <Setter Property="FontSize" Value="22"/>
-        <Setter Property="FontAttributes" Value="Bold"/>
         <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
     </Style>
 
     <Style x:Key="BodyTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="PatrickHand"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
     </Style>
 
     <Style x:Key="MutedTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="PatrickHand"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="TextColor" Value="{StaticResource TextMuted}"/>
     </Style>
 
-    <!-- Implicit Label -->
+    <Style x:Key="HudValueStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="Peralta"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="TextColor" Value="{StaticResource BrandAmber}"/>
+    </Style>
+
+    <!-- Implicit Label — PatrickHand body default -->
     <Style TargetType="Label">
+        <Setter Property="FontFamily" Value="PatrickHand"/>
         <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
         <Setter Property="FontSize" Value="14"/>
     </Style>
@@ -113,6 +132,7 @@
 
     <!-- Entry / Input Styles -->
     <Style x:Key="GameInputStyle" TargetType="Entry">
+        <Setter Property="FontFamily" Value="PatrickHand"/>
         <Setter Property="BackgroundColor" Value="{StaticResource SurfaceBackground}"/>
         <Setter Property="TextColor" Value="{StaticResource TextPrimary}"/>
         <Setter Property="PlaceholderColor" Value="{StaticResource TextMuted}"/>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="HexMaster.FloodRush.Game.Components.Welcome.MainMenuView">
+
+    <VerticalStackLayout x:Name="ButtonStack"
+                         Spacing="16"
+                         HorizontalOptions="Fill"
+                         VerticalOptions="Center">
+
+        <Button x:Name="PlayButton"
+                Text="{Binding PlayButtonText}"
+                Style="{StaticResource PrimaryButtonStyle}"
+                Command="{Binding PlayCommand}"
+                HorizontalOptions="Fill"/>
+
+        <Button x:Name="LoadButton"
+                Text="Load Level"
+                Style="{StaticResource SecondaryButtonStyle}"
+                Command="{Binding LoadLevelCommand}"
+                HorizontalOptions="Fill"/>
+
+        <Button x:Name="SettingsButton"
+                Text="Settings"
+                Style="{StaticResource SecondaryButtonStyle}"
+                Command="{Binding SettingsCommand}"
+                HorizontalOptions="Fill"/>
+
+    </VerticalStackLayout>
+</ContentView>

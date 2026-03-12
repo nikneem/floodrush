@@ -62,7 +62,45 @@ The active gameplay screen uses a fixed three-zone landscape layout:
 - See `docs/gameplay-ui-and-pipe-controls.md` for the human-readable design reference.
 
 
-## Accessibility
+## Component organisation
+
+Pages are thin orchestration shells. Visual sections must be extracted into reusable `ContentView` components.
+
+### Directory structure
+
+| Path | Purpose |
+|------|---------|
+| `Components/Welcome/` | Welcome page components (`GameTitleView`, `MainMenuView`) |
+| `Components/Gameplay/` | Gameplay screen components (HUD strip, pipe stack, result banner) |
+| `Controls/Pipes/` | Interactive pipe tile controls (one per `PipeSectionType`) |
+| `Controls/Tiles/` | Fixed tile controls (start, finish, basin, split) |
+| `Controls/` | Shared interactive controls (`PipeStackControl`, `PlayfieldGridControl`) |
+| `Views/` | Full-screen overlay views (`PauseResultOverlay`) |
+
+### Component rules
+
+- A page must not embed more than one logical section inline; each section belongs in a `ContentView` component.
+- Components own their animation logic in code-behind; pages do not animate sub-elements directly.
+- Bindable properties are used when a component needs data from the outside; events are used to communicate back.
+- No inline colour or gradient declarations anywhere — all via style or colour keys.
+- Animation must use the `*Async` MAUI extension methods (e.g. `FadeToAsync`, `TranslateToAsync`).
+
+## Typography
+
+- **Heading / title elements** (`GameTitleStyle`, `PageTitleStyle`, `SectionHeadingStyle`, `HudValueStyle`): `FontFamily="Peralta"`
+- **All other text** (body, subtitle, muted, button labels, inputs): `FontFamily="PatrickHand"`
+- Both fonts registered in `MauiProgram.ConfigureFonts` as `"Peralta"` and `"PatrickHand"`.
+- Font files live in `Resources/Fonts/Peralta-Regular.ttf` and `Resources/Fonts/PatrickHand-Regular.ttf`.
+
+## Animation guidelines
+
+- Entrance animations (fade + translate) use `CubicOut` easing for snappiness.
+- Looping ambient animations (glow pulse, breathing) use `SinInOut` for smoothness.
+- Always combine parallel animations with `Task.WhenAll` — never sequential `await` chains for simultaneous motion.
+- Keep ambient loop durations between 1.5 s and 3 s per phase to avoid fatigue.
+- Animation code lives in component code-behind, never in page code-behind.
+
+
 - Use clear color and shape differences for tile types.
 - Avoid relying on color alone to communicate state.
 - Ensure touch targets are practical for mobile devices in landscape mode.
@@ -70,11 +108,14 @@ The active gameplay screen uses a fixed three-zone landscape layout:
 ## Acceptance criteria
 - A new player can navigate from the welcome page into a playable level without confusion.
 - Orientation behavior is enforced on supported mobile targets.
-- All button styles (primary, secondary, danger) are defined in `Resources/Styles/Styles.xaml` and applied via style keys — no inline color or gradient declarations on individual pages.
+- All button styles (primary, secondary, danger) are defined in `Resources/Styles/Styles.xaml` and applied via style keys — no inline color or gradient declarations on individual pages or components.
 - All colours are defined in `Resources/Styles/Colors.xaml` and referenced by key.
 - The `Play` button text changes to `Continue` when local progress exists.
 - All pages use the dark game theme (deep navy background, amber accents).
 - DI wires ViewModels to pages via constructor injection with no service-locator patterns.
+- Heading/title elements use the Peralta font; all other text uses the Patrick Hand font.
+- Pages delegate visual sections to `ContentView` components; no page embeds more than one logical section inline.
+- Animations use `*Async` MAUI extension methods and run in component code-behind.
 
 ## Implementation notes
 - MAUI project: `src/Game/HexMaster.FloodRush.Game/`
@@ -82,5 +123,7 @@ The active gameplay screen uses a fixed three-zone landscape layout:
 - Colour palette anchor: Primary `#f5b442`, Secondary `#134573`
 - Button gradient brushes: `PrimaryButtonGradientBrush` and `SecondaryButtonGradientBrush` in `Colors.xaml`
 - Implicit `Button` style defaults to `PrimaryButtonStyle`; use `Style="{StaticResource SecondaryButtonStyle}"` to override
-- Landscape lock: Android `ScreenOrientation.Landscape` in `MainActivity`; iOS `Info.plist` landscape-only
+- Landscape lock: Android `ScreenOrientation.SensorLandscape` in `MainActivity`; iOS `Info.plist` landscape-only
+- Fullscreen: Android `WindowCompat` immersive mode; Windows `AppWindowPresenterKind.FullScreen`
+- Welcome page: `GameTitleView` (animated Peralta title with amber glow) + `MainMenuView` (stagger-entrance buttons)
 - See `docs/maui-client-shell-and-navigation.md` for full design reference

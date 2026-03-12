@@ -2,10 +2,11 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:HexMaster.FloodRush.Game.ViewModels"
+             xmlns:welcome="clr-namespace:HexMaster.FloodRush.Game.Components.Welcome"
              x:Class="HexMaster.FloodRush.Game.Pages.WelcomePage"
              Shell.NavBarIsVisible="False">
 
-    <!-- Root grid: background image + overlay + content all stacked -->
+    <!-- Root grid: background image + overlay + content stacked -->
     <Grid>
         <!-- Background illustration -->
         <Image Source="main_screen_background.png"
@@ -13,56 +14,32 @@
                HorizontalOptions="Fill"
                VerticalOptions="Fill"/>
 
-        <!-- Dark overlay to keep text readable -->
-        <BoxView HorizontalOptions="Fill" VerticalOptions="Fill" Opacity="0.65">
+        <!-- Dark overlay — stronger on the right to keep buttons readable -->
+        <BoxView HorizontalOptions="Fill" VerticalOptions="Fill">
             <BoxView.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                     <GradientStop Color="#CC0d1b2a" Offset="0"/>
-                    <GradientStop Color="#AA0d1b2a" Offset="0.5"/>
+                    <GradientStop Color="#880d1b2a" Offset="0.45"/>
                     <GradientStop Color="#EE0d1b2a" Offset="1"/>
                 </LinearGradientBrush>
             </BoxView.Background>
         </BoxView>
 
-        <!-- Page content -->
-        <Grid ColumnDefinitions="*,Auto" Padding="40,20">
-            <!-- Left: Branding -->
-            <StackLayout Grid.Column="0" VerticalOptions="Center" Spacing="12">
-                <Label Text="FloodRush"
-                       FontSize="56"
-                       FontAttributes="Bold"
-                       TextColor="{StaticResource BrandAmber}"
-                       HorizontalOptions="Start"/>
-                <Label Text="Place pipes. Redirect the flood."
-                       Style="{StaticResource PageSubtitleStyle}"
-                       HorizontalOptions="Start"/>
-                <BoxView HeightRequest="2" WidthRequest="200" HorizontalOptions="Start"
-                         Margin="0,8,0,0">
-                    <BoxView.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Color="{StaticResource BrandAmber}" Offset="0"/>
-                            <GradientStop Color="Transparent" Offset="1"/>
-                        </LinearGradientBrush>
-                    </BoxView.Background>
-                </BoxView>
-            </StackLayout>
+        <!-- Page content — two columns -->
+        <Grid ColumnDefinitions="*,Auto" Padding="40,24">
 
-            <!-- Right: Navigation buttons -->
-            <StackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="End"
-                         Spacing="16" WidthRequest="260">
-                <Button Text="{Binding PlayButtonText}"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Command="{Binding PlayCommand}"
-                        HorizontalOptions="Fill"/>
-                <Button Text="Load Level"
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Command="{Binding LoadLevelCommand}"
-                        HorizontalOptions="Fill"/>
-                <Button Text="Settings"
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Command="{Binding SettingsCommand}"
-                        HorizontalOptions="Fill"/>
-            </StackLayout>
+            <!-- Left: game title component -->
+            <welcome:GameTitleView Grid.Column="0"
+                                   VerticalOptions="Center"
+                                   HorizontalOptions="Start"/>
+
+            <!-- Right: main menu buttons component -->
+            <welcome:MainMenuView Grid.Column="1"
+                                  BindingContext="{Binding}"
+                                  VerticalOptions="Center"
+                                  HorizontalOptions="End"
+                                  WidthRequest="260"/>
         </Grid>
     </Grid>
 </ContentPage>
+

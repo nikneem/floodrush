@@ -71,15 +71,61 @@ All buttons: `CornerRadius=10`, `Padding="32,16"`, `FontSize=16`, `FontAttribute
 | `MutedTextStyle` | `Label` | 12 pt muted helper text |
 | `StatusBadgeStyle` | `Border` | Small pill for status indicators |
 
+## Typography system
+
+Fonts are registered in `MauiProgram.ConfigureFonts` and referenced by alias across all styles.
+
+| Alias | File | Usage |
+|-------|------|-------|
+| `Peralta` | `Resources/Fonts/Peralta-Regular.ttf` | Game title, page headings, section headings, HUD values |
+| `PatrickHand` | `Resources/Fonts/PatrickHand-Regular.ttf` | All other text — subtitles, body, muted labels, button labels, inputs |
+
+Style keys using Peralta: `GameTitleStyle`, `PageTitleStyle`, `SectionHeadingStyle`, `HudValueStyle`.  
+Style keys using PatrickHand: `PageSubtitleStyle`, `BodyTextStyle`, `MutedTextStyle`, implicit `Label`, all `Button` styles, implicit `Entry`.
+
+## Component organisation
+
+Pages are thin orchestration shells — they provide the background, layout skeleton, and ViewModel binding. All visual sections are extracted into `ContentView` components.
+
+| Directory | Contents |
+|-----------|---------|
+| `Components/Welcome/` | `GameTitleView` — animated Peralta title with amber glow; `MainMenuView` — stagger-entrance nav buttons |
+| `Components/Gameplay/` | HUD strip, result banner, and other gameplay screen sections |
+| `Controls/Pipes/` | Interactive pipe tile controls (one per `PipeSectionType`) |
+| `Controls/Tiles/` | Fixed tile controls (start, finish, basin, split) |
+| `Controls/` | `PipeStackControl`, `PlayfieldGridControl` |
+| `Views/` | Full-screen overlay views (`PauseResultOverlay`) |
+
+### Animation conventions
+
+- All entrance animations use **`CubicOut`** easing — fast start, soft landing.
+- All looping ambient animations use **`SinInOut`** easing — smooth, fatigue-free.
+- Parallel animations always use `Task.WhenAll` rather than sequential `await`.
+- Animation code lives in component code-behind only — pages never animate sub-elements directly.
+- Use `*Async` MAUI extension methods (`FadeToAsync`, `TranslateToAsync`, etc.).
+
+### Welcome page — `GameTitleView`
+
+The `GameTitleView` component produces the animated game title:
+
+- **Three stacked `Label` layers** in a `Grid` create a layered glow:
+  - Outer halo: `Opacity=0.25`, `Shadow.Radius=48` — wide, soft glow
+  - Mid layer: `Opacity=0.45`, `Shadow.Radius=24` — intermediate halo
+  - Foreground: full `Opacity`, `Shadow.Radius=8` — crisp text
+- **Breathing animation**: outer and mid layers pulse between opacity 0.20/0.35 and 0.55/0.70 on a 2.2 s `SinInOut` cycle.
+- **Accent rule**: slides in from the left and fades in over 700 ms on first load.
 ## Screens
 
 ### Welcome page (`Pages/WelcomePage.xaml`)
 
-Two-column landscape layout:
-- **Left column** — Game title "FloodRush" in amber, tagline "Place pipes. Redirect the flood." with a decorative amber gradient rule.
-- **Right column** — Three action buttons: **Play / Continue**, **Load Level**, **Settings**.
+Two-column landscape layout backed by the `main_screen_background.png` illustration with a directional dark overlay.
+
+- **Left column** — `GameTitleView` component: animated "FloodRush" title in Peralta font with layered amber glow + breathing animation, tagline in PatrickHand, sliding accent rule.
+- **Right column** — `MainMenuView` component: three action buttons (**Play / Continue**, **Load Level**, **Settings**) with stagger-entrance animation on load.
 
 The `WelcomeViewModel.PlayButtonText` property returns `"Continue"` when `ILocalStateService.HasActiveProgress` is true, otherwise `"Play"`. `OnAppearing` calls `RefreshState()` so the button text updates each time the player returns to this screen.
+
+
 
 ### Level selection page (`Pages/LevelSelectionPage.xaml`)
 
