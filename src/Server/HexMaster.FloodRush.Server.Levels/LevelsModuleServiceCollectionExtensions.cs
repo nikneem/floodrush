@@ -21,6 +21,7 @@ public static class LevelsModuleServiceCollectionExtensions
         services.AddScoped<ICommandHandler<SeedBasicLevelsCommand, SeedBasicLevelsResponse>, SeedBasicLevelsCommandHandler>();
         services.AddScoped<IQueryHandler<GetLevelRevisionQuery, LevelRevisionDto?>, GetLevelRevisionQueryHandler>();
         services.AddScoped<IQueryHandler<GetReleasedLevelsQuery, ReleasedLevelsResponse>, GetReleasedLevelsQueryHandler>();
+        services.AddHostedService<BasicLevelsSeedService>();
 
         return services;
     }

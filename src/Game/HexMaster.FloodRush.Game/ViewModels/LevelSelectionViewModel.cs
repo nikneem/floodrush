@@ -225,12 +225,24 @@ public sealed class LevelSelectionViewModel : BaseViewModel
 
         foreach (var releasedLevel in releasedLevels)
         {
-            var revision = await levelsApiService.GetLevelRevisionAsync(
-                releasedLevel.LevelId,
-                releasedLevel.Revision,
-                cancellationToken);
+            try
+            {
+                var revision = await levelsApiService.GetLevelRevisionAsync(
+                    releasedLevel.LevelId,
+                    releasedLevel.Revision,
+                    cancellationToken);
 
-            await levelCacheService.SaveLevelRevisionAsync(revision, cancellationToken);
+                await levelCacheService.SaveLevelRevisionAsync(revision, cancellationToken);
+            }
+            catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException)
+            {
+                // Log and skip: a single failed revision must not prevent the other levels from caching.
+                logger.LogWarning(
+                    exception,
+                    "Could not cache revision {Revision} for level {LevelId}. Skipping.",
+                    releasedLevel.Revision,
+                    releasedLevel.LevelId);
+            }
         }
 
         await levelCacheService.SaveReleasedLevelsAsync(releasedLevels, cancellationToken);

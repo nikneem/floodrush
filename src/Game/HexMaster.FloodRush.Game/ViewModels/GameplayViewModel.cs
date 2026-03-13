@@ -473,8 +473,10 @@ public sealed class GameplayViewModel : BaseViewModel
 
                 return (releasedLevel, levelRevision, "server");
             }
-            catch (HttpRequestException exception)
+            catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException)
             {
+                // Fall back to cache whether the server was unreachable (HttpRequestException)
+                // or returned a valid response that did not include this level (InvalidOperationException).
                 logger.LogWarning(exception, "Falling back to the cached level revision for {LevelId} after a server request failed.", LevelId);
             }
         }
