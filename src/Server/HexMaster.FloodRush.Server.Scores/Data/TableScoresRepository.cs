@@ -9,6 +9,7 @@ internal sealed class TableScoresRepository : IScoresRepository
 {
     private const string TableName = "scores";
     private readonly TableClient tableClient;
+    private readonly Task _tableReadyTask;
 
     public TableScoresRepository(IConfiguration configuration)
     {
@@ -17,6 +18,7 @@ internal sealed class TableScoresRepository : IScoresRepository
                 $"Connection string '{StorageResourceNames.Tables}' is required for the scores module.");
 
         tableClient = new TableClient(connectionString, TableName);
+        _tableReadyTask = tableClient.CreateIfNotExistsAsync();
     }
 
     public async ValueTask<LevelScoreDto> SubmitScoreAsync(
@@ -24,7 +26,7 @@ internal sealed class TableScoresRepository : IScoresRepository
         SubmitScoreRequest request,
         CancellationToken cancellationToken)
     {
-        await tableClient.CreateIfNotExistsAsync(cancellationToken);
+        await _tableReadyTask;
 
         var entity = new LevelScoreEntity
         {
@@ -46,7 +48,7 @@ internal sealed class TableScoresRepository : IScoresRepository
         int take,
         CancellationToken cancellationToken)
     {
-        await tableClient.CreateIfNotExistsAsync(cancellationToken);
+        await _tableReadyTask;
 
         var scores = new List<LevelScoreDto>();
         var query = tableClient.QueryAsync<LevelScoreEntity>(
@@ -70,7 +72,7 @@ internal sealed class TableScoresRepository : IScoresRepository
         string levelId,
         CancellationToken cancellationToken)
     {
-        await tableClient.CreateIfNotExistsAsync(cancellationToken);
+        await _tableReadyTask;
 
         var scores = new List<LevelScoreDto>();
         var query = tableClient.QueryAsync<LevelScoreEntity>(

@@ -84,21 +84,36 @@ public sealed class LevelCacheService : ILevelCacheService
         ArgumentNullException.ThrowIfNull(releasedLevels);
 
         var stopwatch = Stopwatch.StartNew();
-        Directory.CreateDirectory(cacheRootPath);
-
-        await using var stream = File.Create(releasedLevelsPath);
-        await JsonSerializer.SerializeAsync(stream, releasedLevels, SerializerOptions, cancellationToken);
-
-        FloodRushTelemetry.CacheOperations.Add(1, new TagList
+        try
         {
-            { "operation", "released-levels-write" },
-            { "result", "success" }
-        });
-        FloodRushTelemetry.OperationDurationMs.Record(stopwatch.Elapsed.TotalMilliseconds, new TagList
+            Directory.CreateDirectory(cacheRootPath);
+
+            await using var stream = File.Create(releasedLevelsPath);
+            await JsonSerializer.SerializeAsync(stream, releasedLevels, SerializerOptions, cancellationToken);
+
+            FloodRushTelemetry.CacheOperations.Add(1, new TagList
+            {
+                { "operation", "released-levels-write" },
+                { "result", "success" }
+            });
+            logger.LogInformation("Saved {Count} released levels to the local cache.", releasedLevels.Count);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            { "operation", "released-levels-cache-write" }
-        });
-        logger.LogInformation("Saved {Count} released levels to the local cache.", releasedLevels.Count);
+            FloodRushTelemetry.CacheOperations.Add(1, new TagList
+            {
+                { "operation", "released-levels-write" },
+                { "result", "error" }
+            });
+            logger.LogWarning(exception, "Failed to save released levels to local cache.");
+        }
+        finally
+        {
+            FloodRushTelemetry.OperationDurationMs.Record(stopwatch.Elapsed.TotalMilliseconds, new TagList
+            {
+                { "operation", "released-levels-cache-write" }
+            });
+        }
     }
 
     public async Task<LevelRevisionDto?> GetLevelRevisionAsync(
@@ -166,22 +181,38 @@ public sealed class LevelCacheService : ILevelCacheService
         ArgumentNullException.ThrowIfNull(levelRevision);
 
         var stopwatch = Stopwatch.StartNew();
-        Directory.CreateDirectory(revisionsRootPath);
-
-        var revisionPath = GetRevisionPath(levelRevision.LevelId, levelRevision.Revision);
-        await using var stream = File.Create(revisionPath);
-        await JsonSerializer.SerializeAsync(stream, levelRevision, SerializerOptions, cancellationToken);
-
-        FloodRushTelemetry.CacheOperations.Add(1, new TagList
+        try
         {
-            { "operation", "level-revision-write" },
-            { "result", "success" }
-        });
-        FloodRushTelemetry.OperationDurationMs.Record(stopwatch.Elapsed.TotalMilliseconds, new TagList
+            Directory.CreateDirectory(revisionsRootPath);
+
+            var revisionPath = GetRevisionPath(levelRevision.LevelId, levelRevision.Revision);
+            await using var stream = File.Create(revisionPath);
+            await JsonSerializer.SerializeAsync(stream, levelRevision, SerializerOptions, cancellationToken);
+
+            FloodRushTelemetry.CacheOperations.Add(1, new TagList
+            {
+                { "operation", "level-revision-write" },
+                { "result", "success" }
+            });
+            logger.LogInformation("Saved cached level revision {LevelId}/{Revision}.", levelRevision.LevelId, levelRevision.Revision);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            { "operation", "level-revision-cache-write" }
-        });
-        logger.LogInformation("Saved cached level revision {LevelId}/{Revision}.", levelRevision.LevelId, levelRevision.Revision);
+            FloodRushTelemetry.CacheOperations.Add(1, new TagList
+            {
+                { "operation", "level-revision-write" },
+                { "result", "error" }
+            });
+            logger.LogWarning(exception, "Failed to save level revision {LevelId}/{Revision} to local cache.",
+                levelRevision.LevelId, levelRevision.Revision);
+        }
+        finally
+        {
+            FloodRushTelemetry.OperationDurationMs.Record(stopwatch.Elapsed.TotalMilliseconds, new TagList
+            {
+                { "operation", "level-revision-cache-write" }
+            });
+        }
     }
 
     private string GetRevisionPath(string levelId, string revision) =>

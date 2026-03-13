@@ -11,6 +11,7 @@ internal sealed class TableLevelsRepository : ILevelsRepository
     private readonly TableClient tableClient;
     private readonly BuiltInLevelsCatalog builtInLevelsCatalog;
     private readonly BasicLevelsSeedCatalog basicLevelsSeedCatalog;
+    private readonly Task _tableReadyTask;
 
     public TableLevelsRepository(
         IConfiguration configuration,
@@ -24,13 +25,14 @@ internal sealed class TableLevelsRepository : ILevelsRepository
                 $"Connection string '{StorageResourceNames.Tables}' is required for the levels module.");
 
         tableClient = new TableClient(connectionString, TableName);
+        _tableReadyTask = tableClient.CreateIfNotExistsAsync();
     }
 
     public async ValueTask<IReadOnlyCollection<ReleasedLevelSummaryDto>> GetReleasedLevelsAsync(
         string profileId,
         CancellationToken cancellationToken)
     {
-        await tableClient.CreateIfNotExistsAsync(cancellationToken);
+        await _tableReadyTask;
 
         var levels = new List<ReleasedLevelSummaryDto>(builtInLevelsCatalog.GetReleasedLevels());
         var query = tableClient.QueryAsync<ReleasedLevelEntity>(
@@ -63,7 +65,7 @@ internal sealed class TableLevelsRepository : ILevelsRepository
 
     public async ValueTask<int> SeedBasicLevelsAsync(CancellationToken cancellationToken)
     {
-        await tableClient.CreateIfNotExistsAsync(cancellationToken);
+        await _tableReadyTask;
 
         var revisions = basicLevelsSeedCatalog.GetLevels();
         var releasedLevels = basicLevelsSeedCatalog.GetReleasedLevels()
@@ -100,7 +102,7 @@ internal sealed class TableLevelsRepository : ILevelsRepository
         string revision,
         CancellationToken cancellationToken)
     {
-        await tableClient.CreateIfNotExistsAsync(cancellationToken);
+        await _tableReadyTask;
 
         var response = await tableClient.GetEntityIfExistsAsync<LevelRevisionEntity>(
             LevelRevisionEntity.PartitionValue,

@@ -14,6 +14,7 @@ internal sealed class RotatingRsaKeyProvider
     private readonly DeviceTokenOptions _options;
     private readonly ILogger<RotatingRsaKeyProvider> _logger;
     private Timer? _rotationTimer;
+    private int _disposed;
 
     public RotatingRsaKeyProvider(
         IOptions<DeviceTokenOptions> options,
@@ -134,6 +135,9 @@ internal sealed class RotatingRsaKeyProvider
 
     public void Dispose()
     {
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
+            return;
+
         _rotationTimer?.Dispose();
         _lock.EnterWriteLock();
         try

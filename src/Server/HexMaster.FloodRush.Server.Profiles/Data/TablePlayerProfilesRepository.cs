@@ -10,6 +10,7 @@ internal sealed class TablePlayerProfilesRepository : IPlayerProfilesRepository
 {
     private const string TableName = "profiles";
     private readonly TableClient tableClient;
+    private readonly Task _tableReadyTask;
 
     public TablePlayerProfilesRepository(IConfiguration configuration)
     {
@@ -18,6 +19,7 @@ internal sealed class TablePlayerProfilesRepository : IPlayerProfilesRepository
                 $"Connection string '{StorageResourceNames.Tables}' is required for the profiles module.");
 
         tableClient = new TableClient(connectionString, TableName);
+        _tableReadyTask = tableClient.CreateIfNotExistsAsync();
     }
 
     public async ValueTask<PlayerProfileDto> GetOrCreateByDeviceIdAsync(
@@ -117,6 +119,9 @@ internal sealed class TablePlayerProfilesRepository : IPlayerProfilesRepository
         }
     }
 
-    private async ValueTask EnsureTableExistsAsync(CancellationToken cancellationToken) =>
-        await tableClient.CreateIfNotExistsAsync(cancellationToken);
+    private async ValueTask EnsureTableExistsAsync(CancellationToken cancellationToken)
+    {
+        _ = cancellationToken;
+        await _tableReadyTask;
+    }
 }
