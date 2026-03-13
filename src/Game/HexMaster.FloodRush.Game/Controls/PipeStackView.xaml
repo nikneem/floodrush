@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HexMaster.FloodRush.Game.ViewModels"
+             x:Class="HexMaster.FloodRush.Game.Controls.PipeStackView"
+             x:Name="PipeStackRoot">
+    <Border Padding="14"
+            Background="{StaticResource SurfaceBackgroundBrush}"
+            Stroke="{StaticResource CardBackgroundBrush}"
+            StrokeThickness="1"
+            StrokeShape="RoundRectangle 16">
+        <Grid RowDefinitions="Auto,Auto,*"
+              RowSpacing="12">
+            <Label Grid.Row="0"
+                   Text="Pipe stack"
+                   Style="{StaticResource SectionHeadingStyle}"
+                   HorizontalTextAlignment="Center"/>
+
+            <Label Grid.Row="1"
+                   Text="The bottom tile places next."
+                   Style="{StaticResource MutedTextStyle}"
+                   HorizontalTextAlignment="Center"/>
+
+            <Grid x:Name="PipeStackViewport"
+                  Grid.Row="2">
+                <VerticalStackLayout x:Name="PipeStackContainer"
+                                     BindableLayout.ItemsSource="{Binding Source={x:Reference PipeStackRoot}, Path=ItemsSource}"
+                                     Spacing="10"
+                                     VerticalOptions="End"
+                                     Margin="0,0,0,2">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PipeStackItem">
+                            <Border Padding="10"
+                                    Background="{StaticResource SurfaceBackgroundBrush}"
+                                    Stroke="{StaticResource CardBackgroundBrush}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 14"
+                                    Opacity="{Binding PreviewOpacity}">
+                                <Grid ColumnDefinitions="64,*"
+                                      ColumnSpacing="10"
+                                      MinimumHeightRequest="76">
+                                    <Border Background="{StaticResource AppBackgroundGradientBrush}"
+                                            Stroke="{StaticResource SecondaryBrush}"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 12">
+                                        <Label Text="{Binding Glyph}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               HorizontalTextAlignment="Center"
+                                               VerticalTextAlignment="Center"
+                                               FontSize="30"
+                                               TextColor="{StaticResource BrandAmber}"/>
+                                    </Border>
+
+                                    <VerticalStackLayout Grid.Column="1"
+                                                         Spacing="2"
+                                                         VerticalOptions="Center">
+                                        <Label Text="{Binding Label}"
+                                               Style="{StaticResource BodyTextStyle}"
+                                               FontAttributes="Bold"/>
+                                        <Label Text="{Binding QueueLabel}"
+                                               Style="{StaticResource MutedTextStyle}"/>
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border"
+                                                 Binding="{Binding IsNextToPlace}"
+                                                 Value="True">
+                                        <Setter Property="Background"
+                                                Value="{StaticResource CardGradientBrush}"/>
+                                        <Setter Property="Stroke"
+                                                Value="{StaticResource PrimaryBrush}"/>
+                                        <Setter Property="StrokeThickness"
+                                                Value="2"/>
+                                    </DataTrigger>
+                                </Border.Triggers>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Grid>
+        </Grid>
+    </Border>
+</ContentView>

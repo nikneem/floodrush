@@ -20,6 +20,7 @@ public sealed class PlayfieldTileView : ContentView
         propertyChanged: OnTileSizePropertyChanged);
 
     private readonly Border tileBorder;
+    private readonly BoxView baseLayer;
     private readonly Image backgroundImage;
     private readonly BoxView overlay;
     private readonly Label titleLabel;
@@ -27,9 +28,15 @@ public sealed class PlayfieldTileView : ContentView
 
     public PlayfieldTileView()
     {
+        baseLayer = new BoxView
+        {
+            Color = GetColor("CardBackgroundElevated")
+        };
+
         backgroundImage = new Image
         {
-            Aspect = Aspect.AspectFill
+            Aspect = Aspect.AspectFill,
+            Opacity = 0.96d
         };
 
         overlay = new BoxView();
@@ -65,6 +72,7 @@ public sealed class PlayfieldTileView : ContentView
         tileContent.Children.Add(subtitleLabel);
 
         var tileVisual = new Grid();
+        tileVisual.Children.Add(baseLayer);
         tileVisual.Children.Add(backgroundImage);
         tileVisual.Children.Add(overlay);
         tileVisual.Children.Add(tileContent);
@@ -73,6 +81,7 @@ public sealed class PlayfieldTileView : ContentView
         {
             Padding = new Thickness(8),
             StrokeThickness = 1,
+            Background = new SolidColorBrush(GetColor("CardBackground")),
             StrokeShape = new RoundRectangle
             {
                 CornerRadius = new CornerRadius(12)
@@ -124,12 +133,21 @@ public sealed class PlayfieldTileView : ContentView
             ? "TextMuted"
             : titleColorKey;
 
-        backgroundImage.Source = tile.BackgroundImage;
+        backgroundImage.Source = ImageSource.FromFile(tile.BackgroundImage);
         titleLabel.Text = tile.Title;
         titleLabel.TextColor = GetColor(titleColorKey);
         subtitleLabel.Text = tile.Subtitle;
         subtitleLabel.TextColor = GetColor(subtitleColorKey);
         tileBorder.Stroke = GetTileStroke(tile.Kind);
+
+        if (tile.Kind == PlayfieldTileKind.Empty)
+        {
+            baseLayer.Color = GetColor("CardBackgroundElevated");
+        }
+        else
+        {
+            baseLayer.Color = GetColor("SurfaceBackground");
+        }
 
         if (TryGetTileOverlay(tile.Kind, out var overlayColor))
         {
@@ -178,7 +196,7 @@ public sealed class PlayfieldTileView : ContentView
             PlayfieldTileKind.FinishPoint or
             PlayfieldTileKind.FluidBasin or
             PlayfieldTileKind.SplitSection => new SolidColorBrush(GetColor("White")),
-            _ => new SolidColorBrush(GetColor("TextMuted"))
+            _ => new SolidColorBrush(GetColor("CardBackgroundElevated"))
         };
 
     private static Color GetColor(string key)

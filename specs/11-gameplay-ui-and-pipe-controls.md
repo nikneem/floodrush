@@ -207,6 +207,7 @@ Start and finish point tiles are fixed and rendered as part of the playfield gri
 - HUD height: fixed, minimal (~48 dp).
 - Stack width: fixed (~180–220 dp) so each upcoming pipe preview can show both its symbol and label.
 - Grid viewport: fills remaining space; the visible region is clipped while the rendered board may be larger than the viewport.
+- The preparation countdown timer changes from yellow to orange to red as it approaches zero and blinks during the final 10 seconds.
 
 ## Pre-start modal
 

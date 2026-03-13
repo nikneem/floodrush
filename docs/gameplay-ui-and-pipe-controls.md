@@ -25,6 +25,7 @@ The gameplay screen is divided into three horizontal zones:
 ```
 
 - **HUD strip** — fixed height (~48 dp): level name, current score, flow speed indicator, and the pre-flow countdown.
+- The pre-flow countdown shifts from yellow to orange to red as it approaches zero, and it blinks during the last 10 seconds.
 - **Pipe stack sidebar** — fixed width (~180–220 dp): 10 upcoming pipe sections, stacked vertically with enough room for a readable preview label.
 - When a level loads, the current 10-item stack drops into the sidebar from above with a gravity-style settling animation.
 - **Playfield viewport** — fills remaining space: a clipped viewport that hosts the level board and can pan around oversized layouts.

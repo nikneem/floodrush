@@ -62,6 +62,9 @@ public sealed class GameplayViewModel : BaseViewModel
     private int flowSpeedIndicator;
     private int remainingPrepSeconds;
     private int pipeStackAnimationVersion;
+    private Color prepTimerColor = Colors.Gold;
+    private double prepTimerOpacity = 1d;
+    private bool prepTimerBlinkPhaseVisible = true;
     private CancellationTokenSource? prepCountdownCancellationTokenSource;
 
     public ObservableCollection<PlayfieldTileItem> BoardTiles { get; } = [];
@@ -199,7 +202,25 @@ public sealed class GameplayViewModel : BaseViewModel
     public int RemainingPrepSeconds
     {
         get => remainingPrepSeconds;
-        set => SetField(ref remainingPrepSeconds, value);
+        set
+        {
+            if (SetField(ref remainingPrepSeconds, value))
+            {
+                UpdatePreparationCountdownPresentation();
+            }
+        }
+    }
+
+    public Color PrepTimerColor
+    {
+        get => prepTimerColor;
+        private set => SetField(ref prepTimerColor, value);
+    }
+
+    public double PrepTimerOpacity
+    {
+        get => prepTimerOpacity;
+        private set => SetField(ref prepTimerOpacity, value);
     }
 
     public int PipeStackAnimationVersion
@@ -284,6 +305,7 @@ public sealed class GameplayViewModel : BaseViewModel
         });
 
         StartLevelCommand = new Command(StartLevel);
+        UpdatePreparationCountdownPresentation();
     }
 
     public async Task LoadLevelAsync(CancellationToken cancellationToken = default)
@@ -450,12 +472,17 @@ public sealed class GameplayViewModel : BaseViewModel
             return;
         }
 
+        prepTimerBlinkPhaseVisible = true;
+        UpdatePreparationCountdownPresentation();
         prepCountdownCancellationTokenSource = new CancellationTokenSource();
         _ = RunPreparationCountdownAsync(prepCountdownCancellationTokenSource.Token);
     }
 
     private async Task RunPreparationCountdownAsync(CancellationToken cancellationToken)
     {
+        var secondTickStopwatch = Stopwatch.StartNew();
+        var blinkStopwatch = Stopwatch.StartNew();
+
         try
         {
             while (RemainingPrepSeconds > 0)
@@ -463,13 +490,36 @@ public sealed class GameplayViewModel : BaseViewModel
                 while (IsPaused || IsPreStartModalVisible)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
+                    secondTickStopwatch.Restart();
+                    blinkStopwatch.Restart();
+                    prepTimerBlinkPhaseVisible = true;
+                    UpdatePreparationCountdownPresentation();
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
 
-                if (!IsPaused && !IsPreStartModalVisible && RemainingPrepSeconds > 0)
+                if (PreparationCountdownPresentation.ShouldBlink(RemainingPrepSeconds))
+                {
+                    var isBlinkPhaseVisible = (blinkStopwatch.ElapsedMilliseconds / 500) % 2 == 0;
+                    if (prepTimerBlinkPhaseVisible != isBlinkPhaseVisible)
+                    {
+                        prepTimerBlinkPhaseVisible = isBlinkPhaseVisible;
+                        UpdatePreparationCountdownPresentation();
+                    }
+                }
+                else if (!prepTimerBlinkPhaseVisible)
+                {
+                    prepTimerBlinkPhaseVisible = true;
+                    UpdatePreparationCountdownPresentation();
+                }
+
+                if (!IsPaused &&
+                    !IsPreStartModalVisible &&
+                    RemainingPrepSeconds > 0 &&
+                    secondTickStopwatch.Elapsed >= TimeSpan.FromSeconds(1))
                 {
                     RemainingPrepSeconds--;
+                    secondTickStopwatch.Restart();
                 }
             }
         }
@@ -483,6 +533,25 @@ public sealed class GameplayViewModel : BaseViewModel
         prepCountdownCancellationTokenSource?.Cancel();
         prepCountdownCancellationTokenSource?.Dispose();
         prepCountdownCancellationTokenSource = null;
+        prepTimerBlinkPhaseVisible = true;
+        UpdatePreparationCountdownPresentation();
+    }
+
+    private void UpdatePreparationCountdownPresentation()
+    {
+        var urgency = PreparationCountdownPresentation.ResolveUrgency(RemainingPrepSeconds);
+
+        PrepTimerColor = urgency switch
+        {
+            PreparationCountdownUrgency.Normal => Colors.Gold,
+            PreparationCountdownUrgency.Warning => Colors.Orange,
+            PreparationCountdownUrgency.Critical => Colors.Red,
+            _ => Colors.Gold
+        };
+
+        PrepTimerOpacity = PreparationCountdownPresentation.ResolveOpacity(
+            RemainingPrepSeconds,
+            prepTimerBlinkPhaseVisible);
     }
 
     private void RecordUserAction(string action)
