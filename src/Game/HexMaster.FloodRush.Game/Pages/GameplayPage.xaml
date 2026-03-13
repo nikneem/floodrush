@@ -64,7 +64,7 @@
                                                     IsVisible="{Binding HasLevelLoaded}"
                                                     ContentWidth="{Binding BoardPixelWidth}"
                                                     ContentHeight="{Binding BoardPixelHeight}"
-                                                    MinZoom="1"
+                                                    MinZoom="{Binding MinTileZoom}"
                                                     MaxZoom="{Binding MaxTileZoom}">
                     <controls:ZoomablePlayfieldViewport.PlayfieldContent>
                         <controls:PlayfieldBoardView BoardWidth="{Binding BoardWidth}"

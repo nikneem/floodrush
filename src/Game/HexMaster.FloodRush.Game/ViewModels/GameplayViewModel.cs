@@ -15,7 +15,7 @@ namespace HexMaster.FloodRush.Game.ViewModels;
 public sealed class GameplayViewModel : BaseViewModel
 {
     private const int DefaultPipeStackSize = 10;
-    private const double DefaultTileRenderSize = 120d;
+    private const double DefaultTileRenderSize = 64d;
     private const double DefaultTileSpacing = 8d;
     private const double DefaultBoardPadding = 48d;
     private static readonly string[] TileBackgroundImages =
@@ -232,6 +232,8 @@ public sealed class GameplayViewModel : BaseViewModel
     public double TileRenderSize => DefaultTileRenderSize;
 
     public double TileSpacing => DefaultTileSpacing;
+
+    public double MinTileZoom => PlayfieldViewportMath.DefaultMinZoom;
 
     public double MaxTileZoom => PlayfieldViewportMath.CalculateMaxZoomForTileSize(TileRenderSize);
 

@@ -15,25 +15,25 @@ public sealed class PlayfieldViewportMathTests
     [Fact]
     public void ClampZoom_ClampsRequestedZoom_WhenOutsideBounds()
     {
-        var tooSmall = PlayfieldViewportMath.ClampZoom(0.5d, 1d, 3d);
-        var tooLarge = PlayfieldViewportMath.ClampZoom(4d, 1d, 3d);
+        var tooSmall = PlayfieldViewportMath.ClampZoom(0.25d, 0.5d, 2d);
+        var tooLarge = PlayfieldViewportMath.ClampZoom(3d, 0.5d, 2d);
 
-        Assert.Equal(1d, tooSmall, 3);
-        Assert.Equal(3d, tooLarge, 3);
+        Assert.Equal(0.5d, tooSmall, 3);
+        Assert.Equal(2d, tooLarge, 3);
     }
 
     [Fact]
     public void CalculateMaxZoomForTileSize_ReturnsRatio_WhenTileCanZoomToNativeArtSize()
     {
-        var zoom = PlayfieldViewportMath.CalculateMaxZoomForTileSize(120d, 128d);
+        var zoom = PlayfieldViewportMath.CalculateMaxZoomForTileSize(64d, 128d);
 
-        Assert.Equal(1.0667d, zoom, 4);
+        Assert.Equal(2d, zoom, 3);
     }
 
     [Fact]
     public void CalculateMaxZoomForTileSize_DoesNotReturnLessThanMinZoom()
     {
-        var zoom = PlayfieldViewportMath.CalculateMaxZoomForTileSize(160d, 128d);
+        var zoom = PlayfieldViewportMath.CalculateMaxZoomForTileSize(400d, 128d);
 
         Assert.Equal(PlayfieldViewportMath.DefaultMinZoom, zoom, 3);
     }

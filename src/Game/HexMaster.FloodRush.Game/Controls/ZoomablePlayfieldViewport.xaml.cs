@@ -1,4 +1,8 @@
 using HexMaster.FloodRush.Game.Core.Presentation.Viewports;
+#if WINDOWS
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Input;
+#endif
 
 namespace HexMaster.FloodRush.Game.Controls;
 
@@ -39,10 +43,15 @@ public partial class ZoomablePlayfieldViewport : ContentView
 
     private double _pinchStartZoom = PlayfieldViewportMath.DefaultMinZoom;
     private double _currentZoom = PlayfieldViewportMath.DefaultMinZoom;
+#if WINDOWS
+    private FrameworkElement? _windowsPlatformView;
+#endif
 
     public ZoomablePlayfieldViewport()
     {
         InitializeComponent();
+        HandlerChanged += OnViewportHandlerChanged;
+        HandlerChanging += OnViewportHandlerChanging;
         UpdateZoomBadge();
     }
 
@@ -121,6 +130,20 @@ public partial class ZoomablePlayfieldViewport : ContentView
         ZoomBadgeLabel.Text = $"Zoom {(CurrentZoom * 100d):F0}%";
     }
 
+    private void OnViewportHandlerChanged(object? sender, EventArgs e)
+    {
+#if WINDOWS
+        AttachWindowsPointerWheelHandler();
+#endif
+    }
+
+    private void OnViewportHandlerChanging(object? sender, HandlerChangingEventArgs e)
+    {
+#if WINDOWS
+        DetachWindowsPointerWheelHandler();
+#endif
+    }
+
     private async void OnPinchUpdated(object? sender, PinchGestureUpdatedEventArgs e)
     {
         if (ContentWidth <= 0d || ContentHeight <= 0d)
@@ -171,4 +194,54 @@ public partial class ZoomablePlayfieldViewport : ContentView
         await Task.Yield();
         await PlayfieldScrollView.ScrollToAsync(scrollPosition.HorizontalOffset, scrollPosition.VerticalOffset, false);
     }
+
+#if WINDOWS
+    private void AttachWindowsPointerWheelHandler()
+    {
+        if (_windowsPlatformView is not null)
+        {
+            return;
+        }
+
+        if (Handler?.PlatformView is FrameworkElement platformView)
+        {
+            _windowsPlatformView = platformView;
+            _windowsPlatformView.PointerWheelChanged += OnWindowsPointerWheelChanged;
+        }
+    }
+
+    private void DetachWindowsPointerWheelHandler()
+    {
+        if (_windowsPlatformView is null)
+        {
+            return;
+        }
+
+        _windowsPlatformView.PointerWheelChanged -= OnWindowsPointerWheelChanged;
+        _windowsPlatformView = null;
+    }
+
+    private async void OnWindowsPointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        if (ContentWidth <= 0d || ContentHeight <= 0d)
+        {
+            return;
+        }
+
+        var delta = e.GetCurrentPoint((UIElement)sender).Properties.MouseWheelDelta;
+        if (delta == 0)
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        var maxHorizontalOffset = Math.Max(0d, ScaledContentWidth - PlayfieldScrollView.Width);
+        var maxVerticalOffset = Math.Max(0d, ScaledContentHeight - PlayfieldScrollView.Height);
+        var targetVerticalOffset = Math.Clamp(PlayfieldScrollView.ScrollY - delta, 0d, maxVerticalOffset);
+        var targetHorizontalOffset = Math.Clamp(PlayfieldScrollView.ScrollX, 0d, maxHorizontalOffset);
+
+        await PlayfieldScrollView.ScrollToAsync(targetHorizontalOffset, targetVerticalOffset, false);
+    }
+#endif
 }

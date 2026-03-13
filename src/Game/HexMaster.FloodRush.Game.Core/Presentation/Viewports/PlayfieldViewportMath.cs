@@ -2,8 +2,8 @@ namespace HexMaster.FloodRush.Game.Core.Presentation.Viewports;
 
 public static class PlayfieldViewportMath
 {
-    public const double DefaultMinZoom = 1d;
-    public const double DefaultMaxZoom = 3d;
+    public const double DefaultMinZoom = 0.5d;
+    public const double DefaultMaxZoom = 2d;
     public const double DefaultMaxTileRenderSize = 128d;
 
     public static double ClampZoom(double requestedZoom, double minZoom = DefaultMinZoom, double maxZoom = DefaultMaxZoom)

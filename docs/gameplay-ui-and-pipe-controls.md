@@ -141,8 +141,10 @@ Each board cell is its own MAUI tile control, so the level-defined row and colum
 ### Viewport interaction
 
 - The board may be larger than the visible gameplay area.
-- Players can pinch to zoom the playfield, but individual tiles are capped at the native **128 × 128** pixel background-art size.
+- The gameplay board renders each playfield tile at a base size of **64 × 64** pixels before zoom is applied.
+- Players can zoom the playfield between **50% and 200%**.
 - Players can drag to pan across the board whenever the current zoom level or board size causes overflow in either direction.
+- On Windows, the mouse wheel scrolls the playfield viewport vertically.
 - Zoom and pan only change what part of the board is visible; they do not affect scoring, timing, or placement rules.
 - The first playable slice renders the downloaded released-level board immediately so the player can inspect the fixed tiles before starting.
 - Every playfield cell gets a randomized `empty_tile_background_{x}.png` texture when the board is built, and those assignments stay stable for that loaded level so redraws do not reshuffle the art.

@@ -140,9 +140,11 @@ The playfield grid occupies the **right portion of the gameplay screen** (approx
 
 ### Viewport behaviour
 
-- The playfield viewport supports pinch-to-zoom, but tiles must never render above the native **128 × 128** pixel size of the playfield background art.
+- The gameplay board renders each playfield tile at a base size of **64 × 64** pixels before zoom is applied.
+- The playfield viewport supports zoom from **50% to 200%**.
 - The default zoom is **100%**.
 - If the rendered board is wider or taller than the viewport, dragging pans horizontally and vertically across the board.
+- On Windows, the mouse wheel scrolls the playfield viewport vertically.
 - Pinch and drag gestures only change the viewport transform. They do not modify the board state, timer, or score.
 - Single-cell placement remains tap-driven and continues to work inside the current zoomed or panned viewport position.
 
