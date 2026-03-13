@@ -227,6 +227,20 @@ public sealed class PlayfieldBoardView : ContentView
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Plays the shake-and-disintegrate removal animation on the tile at
+    /// (<paramref name="x"/>, <paramref name="y"/>).  Must be called on the UI thread.
+    /// </summary>
+    public Task AnimatePipeRemovalAsync(int x, int y)
+    {
+        if (tileViews.TryGetValue((x, y), out var view))
+        {
+            return view.AnimatePipeRemovalAsync();
+        }
+
+        return Task.CompletedTask;
+    }
+
     private double CalculateBoardAxisLength(int cellCount) =>
         (Math.Max(0, cellCount) * TileSize) +
         (Math.Max(0, cellCount - 1) * TileSpacing) +

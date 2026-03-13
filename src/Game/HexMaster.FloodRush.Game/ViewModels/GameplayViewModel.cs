@@ -45,6 +45,7 @@ public sealed class GameplayViewModel : BaseViewModel
     private readonly INetworkStatusService networkStatus;
     private readonly ILevelCacheService levelCacheService;
     private readonly ILevelsApiService levelsApiService;
+    private readonly IScoresApiService scoresApiService;
     private readonly ILogger<GameplayViewModel> logger;
 
     private string levelId = string.Empty;
@@ -69,6 +70,8 @@ public sealed class GameplayViewModel : BaseViewModel
     private bool prepTimerBlinkPhaseVisible = true;
     private CancellationTokenSource? prepCountdownCancellationTokenSource;
     private bool isFlowActive;
+    private bool isReplacementPenaltyActive;
+    private bool isScoreSubmitting;
     private LevelRevisionDto? loadedRevision;
     private readonly HashSet<(int X, int Y)> visitedTiles = [];
 
@@ -77,6 +80,14 @@ public sealed class GameplayViewModel : BaseViewModel
     /// Handlers must marshal the animation call to the UI thread.
     /// </summary>
     public event EventHandler<BeginTileFlowEventArgs>? BeginTileFlow;
+
+    /// <summary>
+    /// Fired when the player taps an occupied tile and the 3-second removal
+    /// penalty animation must play before the new pipe is committed.
+    /// The handler is responsible for running the animation and calling
+    /// <see cref="PipeRemovalEventArgs.Complete"/> when finished.
+    /// </summary>
+    public event EventHandler<PipeRemovalEventArgs>? PipeRemovalStarted;
 
     public ObservableCollection<PlayfieldTileItem> BoardTiles { get; } = [];
     public ObservableCollection<PipeStackItem> UpcomingPipes { get; } = [];
@@ -158,6 +169,16 @@ public sealed class GameplayViewModel : BaseViewModel
     {
         get => isSuccess;
         set => SetField(ref isSuccess, value);
+    }
+
+    /// <summary>
+    /// True while the completed-level score is being posted to the server.
+    /// Bound to a small indicator in the level-complete overlay.
+    /// </summary>
+    public bool IsScoreSubmitting
+    {
+        get => isScoreSubmitting;
+        private set => SetField(ref isScoreSubmitting, value);
     }
 
     public int Score
@@ -262,6 +283,7 @@ public sealed class GameplayViewModel : BaseViewModel
     public Command ResumeCommand { get; }
     public Command QuitCommand { get; }
     public Command RetryCommand { get; }
+    public Command NextLevelCommand { get; }
     public Command StartLevelCommand { get; }
 
     public GameplayViewModel(
@@ -270,6 +292,7 @@ public sealed class GameplayViewModel : BaseViewModel
         INetworkStatusService networkStatus,
         ILevelCacheService levelCacheService,
         ILevelsApiService levelsApiService,
+        IScoresApiService scoresApiService,
         ILogger<GameplayViewModel> logger)
     {
         this.navigation = navigation;
@@ -277,6 +300,7 @@ public sealed class GameplayViewModel : BaseViewModel
         this.networkStatus = networkStatus;
         this.levelCacheService = levelCacheService;
         this.levelsApiService = levelsApiService;
+        this.scoresApiService = scoresApiService;
         this.logger = logger;
 
         PauseCommand = new Command(() =>
@@ -309,6 +333,7 @@ public sealed class GameplayViewModel : BaseViewModel
         {
             CancelPreparationCountdown();
             isFlowActive = false;
+            isReplacementPenaltyActive = false;
             visitedTiles.Clear();
             IsGameOver = false;
             IsSuccess = false;
@@ -317,6 +342,17 @@ public sealed class GameplayViewModel : BaseViewModel
             IsPreStartModalVisible = HasLevelLoaded;
             RecordUserAction("retry");
             logger.LogInformation("Restarting the pre-start flow for level {LevelId}.", LevelId);
+        });
+
+        NextLevelCommand = new Command(async () =>
+        {
+            CancelPreparationCountdown();
+            IsSuccess = false;
+            RecordUserAction("next-level");
+            logger.LogInformation("Navigating to level selection after completing level {LevelId}.", LevelId);
+            // Navigate to level selection so the player can pick the next level.
+            // The list is refreshed so newly released levels appear immediately.
+            await navigation.NavigateToLevelSelectionAsync(refreshLevels: true);
         });
 
         StartLevelCommand = new Command(StartLevel);
@@ -440,6 +476,7 @@ public sealed class GameplayViewModel : BaseViewModel
     {
         loadedRevision = levelRevision;
         isFlowActive = false;
+        isReplacementPenaltyActive = false;
         visitedTiles.Clear();
         DisplayName = levelRevision.DisplayName;
         Difficulty = string.IsNullOrWhiteSpace(levelRevision.Difficulty)
@@ -757,13 +794,19 @@ public sealed class GameplayViewModel : BaseViewModel
 
     /// <summary>
     /// Places the next-to-place pipe from the bottom of the stack onto the tile at
-    /// (<paramref name="x"/>, <paramref name="y"/>).  Returns <c>true</c> when a
-    /// pipe was successfully placed so the caller can trigger the stack animation.
+    /// (<paramref name="x"/>, <paramref name="y"/>).
+    /// Returns <c>true</c> when the tap was accepted.
+    /// <paramref name="penaltyAnimationStarted"/> is set to <c>true</c> when the
+    /// tile already had a pipe: in that case the caller must NOT animate the pipe
+    /// stack immediately — the <see cref="PipeRemovalStarted"/> event's completion
+    /// callback will trigger the stack animation after the 3-second penalty.
     /// </summary>
-    public bool TryPlacePipe(int x, int y)
+    public bool TryPlacePipe(int x, int y, out bool penaltyAnimationStarted)
     {
+        penaltyAnimationStarted = false;
+
         if (!HasLevelLoaded || isFlowActive || IsGameOver || IsSuccess ||
-            IsPreStartModalVisible || IsPaused)
+            IsPreStartModalVisible || IsPaused || isReplacementPenaltyActive)
         {
             return false;
         }
@@ -784,9 +827,6 @@ public sealed class GameplayViewModel : BaseViewModel
 
         if (UpcomingPipes.Count == 0) return false;
 
-        var nextPipe = UpcomingPipes[UpcomingPipes.Count - 1];
-
-        // Replace tile in collection (triggers a single-tile visual update, not a full rebuild)
         var tileIndex = -1;
         for (var i = 0; i < BoardTiles.Count; i++)
         {
@@ -794,6 +834,44 @@ public sealed class GameplayViewModel : BaseViewModel
         }
         if (tileIndex < 0) return false;
 
+        var nextPipe = UpcomingPipes[UpcomingPipes.Count - 1];
+
+        if (tile.PlacedPipeType is not null)
+        {
+            // Occupied tile → 3-second penalty: block the board and fire the event.
+            // The Page handler runs the animation, then calls Complete() which commits
+            // the placement and lets the caller animate the pipe stack.
+            isReplacementPenaltyActive = true;
+            penaltyAnimationStarted = true;
+
+            PipeRemovalStarted?.Invoke(this, new PipeRemovalEventArgs(x, y, () =>
+            {
+                isReplacementPenaltyActive = false;
+                ExecutePlacement(tile, tileIndex, nextPipe);
+                logger.LogInformation(
+                    "Replaced {PipeType} pipe at ({X},{Y}) for level {LevelId}.",
+                    nextPipe.PipeType, x, y, LevelId);
+            }));
+
+            return true;
+        }
+
+        // Empty tile → immediate placement.
+        ExecutePlacement(tile, tileIndex, nextPipe);
+        logger.LogInformation(
+            "Placed {PipeType} pipe at ({X},{Y}) for level {LevelId}.",
+            nextPipe.PipeType, x, y, LevelId);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Commits the pipe placement: updates <see cref="BoardTiles"/>, removes the
+    /// consumed pipe from the stack, promotes the new bottom item, and adds a
+    /// fresh random pipe to the top.
+    /// </summary>
+    private void ExecutePlacement(PlayfieldTileItem tile, int tileIndex, PipeStackItem nextPipe)
+    {
         BoardTiles[tileIndex] = tile with
         {
             PlacedPipeType = nextPipe.PipeType,
@@ -801,10 +879,8 @@ public sealed class GameplayViewModel : BaseViewModel
             PipeImageRotation = 0d
         };
 
-        // Remove the placed pipe (bottom of stack)
         UpcomingPipes.RemoveAt(UpcomingPipes.Count - 1);
 
-        // Promote the new bottom pipe to "next to place"
         if (UpcomingPipes.Count > 0)
         {
             var lastIdx = UpcomingPipes.Count - 1;
@@ -817,7 +893,6 @@ public sealed class GameplayViewModel : BaseViewModel
             };
         }
 
-        // Add a fresh random pipe to the top of the stack
         var newType = PipeStackGenerator.GenerateInitialStack(1, Random.Shared.Next()).First();
         UpcomingPipes.Insert(0, new PipeStackItem(
             newType,
@@ -826,14 +901,6 @@ public sealed class GameplayViewModel : BaseViewModel
             "Queued above the board",
             false,
             0.72d));
-
-        var wasReplacement = tile.PlacedPipeType.HasValue;
-        logger.LogInformation(
-            "{Action} {PipeType} pipe at ({X},{Y}) for level {LevelId}.",
-            wasReplacement ? "Replaced" : "Placed",
-            nextPipe.PipeType, x, y, LevelId);
-
-        return true;
     }
 
     // ── Flow orchestration ──────────────────────────────────────────────────────
@@ -885,6 +952,10 @@ public sealed class GameplayViewModel : BaseViewModel
             IsSuccess = true;
             logger.LogInformation(
                 "Level {LevelId} completed successfully. Final score: {Score}.", LevelId, Score);
+
+            // Fire-and-forget: submit the score to the server in the background.
+            // The overlay is shown immediately; IsScoreSubmitting drives a small indicator.
+            _ = SubmitCompletedLevelScoreAsync();
             return;
         }
 
@@ -964,6 +1035,28 @@ public sealed class GameplayViewModel : BaseViewModel
         return expected == entry
             ? (entry, fixedTile.BonusPoints, true)
             : null; // fluid arrived from the wrong side
+    }
+
+    private async Task SubmitCompletedLevelScoreAsync()
+    {
+        if (loadedRevision is null) return;
+
+        IsScoreSubmitting = true;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var request = new HexMaster.FloodRush.Shared.Contracts.Scores.SubmitScoreRequest(
+                LevelId,
+                loadedRevision.Revision,
+                Score,
+                DateTimeOffset.UtcNow);
+
+            await scoresApiService.SubmitScoreAsync(request, cts.Token);
+        }
+        finally
+        {
+            IsScoreSubmitting = false;
+        }
     }
 
     private void EndFlowFailed()

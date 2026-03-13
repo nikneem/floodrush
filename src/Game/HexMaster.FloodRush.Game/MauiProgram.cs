@@ -58,6 +58,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IApiBaseUrlProvider, ApiBaseUrlProvider>();
         builder.Services.AddSingleton<IDeviceAuthenticationService, DeviceAuthenticationService>();
         builder.Services.AddSingleton<ILevelsApiService, LevelsApiService>();
+        builder.Services.AddSingleton<IScoresApiService, ScoresApiService>();
 
         // ViewModels
         builder.Services.AddTransient<WelcomeViewModel>();

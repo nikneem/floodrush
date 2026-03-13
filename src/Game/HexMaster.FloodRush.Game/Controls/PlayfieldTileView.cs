@@ -344,4 +344,42 @@ public sealed class PlayfieldTileView : ContentView
             _ => (0, 0)
         };
     }
+
+    /// <summary>
+    /// Plays the 3-second pipe-removal penalty animation on the current pipe overlay:
+    /// <list type="bullet">
+    ///   <item>Phase 1 (0.6 s) – rapid side-to-side shake to signal something is being removed.</item>
+    ///   <item>Phase 2 (2.4 s) – simultaneous spin, shrink, and fade-out (disintegration).</item>
+    /// </list>
+    /// After the method returns the overlay is hidden and all transforms are reset so the
+    /// tile view is ready to display the incoming replacement pipe.
+    /// </summary>
+    public async Task AnimatePipeRemovalAsync()
+    {
+        if (!pipeOverlayImage.IsVisible) return;
+
+        // ── Phase 1: Shake (8 × 75 ms = 600 ms) ────────────────────────────────
+        const double amplitude = 9d;
+        const uint stepMs = 75u;
+        for (var i = 0; i < 8; i++)
+        {
+            var dx = (i % 2 == 0) ? amplitude : -amplitude;
+            await pipeOverlayImage.TranslateTo(dx, 0, stepMs, Easing.Linear);
+        }
+        await pipeOverlayImage.TranslateTo(0, 0, stepMs, Easing.Linear);
+
+        // ── Phase 2: Disintegrate (2 400 ms) ────────────────────────────────────
+        await Task.WhenAll(
+            pipeOverlayImage.RotateTo(360, 2400, Easing.CubicIn),
+            pipeOverlayImage.ScaleTo(0, 2400, Easing.CubicIn),
+            pipeOverlayImage.FadeTo(0, 2000, Easing.Linear));
+
+        // Reset so ApplyTile() can immediately show the replacement pipe.
+        pipeOverlayImage.IsVisible = false;
+        pipeOverlayImage.Rotation = 0;
+        pipeOverlayImage.Scale = 1;
+        pipeOverlayImage.Opacity = 1;
+        pipeOverlayImage.TranslationX = 0;
+        pipeOverlayImage.TranslationY = 0;
+    }
 }

@@ -121,8 +121,14 @@
             <views:PauseResultOverlay
                 BindingContext="{Binding}"
                 IsVisible="{Binding IsPaused}"/>
-            <!-- Game over overlay -->
-            <views:PauseResultOverlay
+
+            <!-- Level-complete overlay (fluid reached all finish points) -->
+            <views:LevelCompleteOverlay
+                BindingContext="{Binding}"
+                IsVisible="{Binding IsSuccess}"/>
+
+            <!-- Level-failed overlay (fluid leaked – no pipe to continue) -->
+            <views:LevelFailedOverlay
                 BindingContext="{Binding}"
                 IsVisible="{Binding IsGameOver}"/>
 

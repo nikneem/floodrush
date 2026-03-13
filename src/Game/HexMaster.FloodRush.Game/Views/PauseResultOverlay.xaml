@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:vm="clr-namespace:HexMaster.FloodRush.Game.ViewModels"
              x:Class="HexMaster.FloodRush.Game.Views.PauseResultOverlay">
     <Grid>
         <!-- Semi-transparent overlay -->
@@ -13,50 +12,17 @@
                 VerticalOptions="Center"
                 MinimumWidthRequest="320">
             <StackLayout Spacing="24" Padding="8">
-                <!-- Pause mode content -->
-                <StackLayout IsVisible="{Binding IsPaused}" Spacing="16">
-                    <Label Text="Paused"
-                           Style="{StaticResource PageTitleStyle}"
-                           HorizontalTextAlignment="Center"/>
-                    <Button Text="Resume"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Command="{Binding ResumeCommand}"
-                            HorizontalOptions="Center"/>
-                    <Button Text="Quit Level"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Command="{Binding QuitCommand}"
-                            HorizontalOptions="Center"/>
-                </StackLayout>
-
-                <!-- Result mode content -->
-                <StackLayout IsVisible="{Binding IsGameOver}" Spacing="16">
-                    <Label Text="Level Complete!"
-                           Style="{StaticResource PageTitleStyle}"
-                           TextColor="{StaticResource Success}"
-                           HorizontalTextAlignment="Center"
-                           IsVisible="{Binding IsSuccess}"/>
-                    <Label Text="Game Over"
-                           Style="{StaticResource PageTitleStyle}"
-                           TextColor="{StaticResource Danger}"
-                           HorizontalTextAlignment="Center"
-                           IsVisible="{Binding IsSuccess, Converter={StaticResource InverseBoolConverter}}"/>
-                    <Label HorizontalTextAlignment="Center">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Score: " FontSize="16" TextColor="{StaticResource TextMuted}"/>
-                                <Span Text="{Binding Score}" TextColor="{StaticResource BrandAmber}" FontSize="24" FontAttributes="Bold"/>
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                    <Button Text="Try Again"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Command="{Binding RetryCommand}"
-                            HorizontalOptions="Center"/>
-                    <Button Text="Quit to Menu"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Command="{Binding QuitCommand}"
-                            HorizontalOptions="Center"/>
-                </StackLayout>
+                <Label Text="Paused"
+                       Style="{StaticResource PageTitleStyle}"
+                       HorizontalTextAlignment="Center"/>
+                <Button Text="Resume"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Command="{Binding ResumeCommand}"
+                        HorizontalOptions="Center"/>
+                <Button Text="Quit Level"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Command="{Binding QuitCommand}"
+                        HorizontalOptions="Center"/>
             </StackLayout>
         </Border>
     </Grid>

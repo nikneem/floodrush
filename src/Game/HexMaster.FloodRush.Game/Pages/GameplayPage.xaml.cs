@@ -16,6 +16,7 @@ public partial class GameplayPage : ContentPage
         this.viewModel = viewModel;
         this.viewModel.PropertyChanged += OnViewModelPropertyChanged;
         this.viewModel.BeginTileFlow += OnBeginTileFlow;
+        this.viewModel.PipeRemovalStarted += OnPipeRemovalStarted;
         BoardView.TileFlowCompleted += OnTileFlowCompleted;
         BoardView.TileTapped += OnTileTapped;
         BindingContext = viewModel;
@@ -77,10 +78,29 @@ public partial class GameplayPage : ContentPage
 
     private async void OnTileTapped(object? sender, (int X, int Y) pos)
     {
-        if (viewModel.TryPlacePipe(pos.X, pos.Y))
+        if (viewModel.TryPlacePipe(pos.X, pos.Y, out bool penaltyStarted) && !penaltyStarted)
         {
+            // Immediate placement: animate the stack right away.
             await PipeStackView.AnimateNewItemAsync();
         }
+        // When penaltyStarted = true the stack animation is triggered from
+        // OnPipeRemovalStarted after the 3-second penalty animation completes.
+    }
+
+    // ── Pipe removal penalty animation ──────────────────────────────────────────
+
+    /// <summary>
+    /// Drives the 3-second shake-and-disintegrate penalty, then commits the
+    /// replacement and animates the pipe stack.
+    /// </summary>
+    private async void OnPipeRemovalStarted(object? sender, PipeRemovalEventArgs e)
+    {
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            await BoardView.AnimatePipeRemovalAsync(e.X, e.Y);
+            e.Complete();                           // ViewModel commits the new pipe
+            await PipeStackView.AnimateNewItemAsync(); // stack slides in the replacement
+        });
     }
 
     // ── Flow animation bridge ────────────────────────────────────────────────────
