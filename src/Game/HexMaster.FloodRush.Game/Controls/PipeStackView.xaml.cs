@@ -54,6 +54,30 @@ public partial class PipeStackView : ContentView
         await Task.WhenAll(animationTasks);
     }
 
+    /// <summary>
+    /// Slides the topmost stack item in from above the viewport clipping boundary.
+    /// Call this after inserting a new pipe at the front of the items source.
+    /// </summary>
+    public async Task AnimateNewItemAsync(CancellationToken cancellationToken = default)
+    {
+        // Give the BindableLayout a frame to render the new child.
+        await Task.Delay(30, cancellationToken);
+
+        var firstChild = PipeStackContainer.Children
+            .OfType<VisualElement>()
+            .FirstOrDefault();
+
+        if (firstChild is null) return;
+
+        firstChild.AbortAnimation("PipeDrop");
+        var itemHeight = firstChild.Height > 0 ? firstChild.Height : 96d;
+        firstChild.TranslationY = -(itemHeight + 14d);
+        firstChild.Opacity = 0d;
+        firstChild.Scale = 0.94d;
+
+        await AnimatePipeStackItemAsync(firstChild, 0, cancellationToken);
+    }
+
     private void OnPipeStackViewportSizeChanged(object? sender, EventArgs e)
     {
         if (PipeStackViewport.Width <= 0d || PipeStackViewport.Height <= 0d)

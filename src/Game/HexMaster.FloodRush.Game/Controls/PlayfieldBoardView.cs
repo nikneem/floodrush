@@ -45,6 +45,11 @@ public sealed class PlayfieldBoardView : ContentView
     /// <summary>Raised when any tile's flow animation completes.</summary>
     public event EventHandler<TileFlowCompletedEventArgs>? TileFlowCompleted;
 
+    /// <summary>
+    /// Raised when the player taps a tile. Payload is the board coordinate (X, Y).
+    /// </summary>
+    public event EventHandler<(int X, int Y)>? TileTapped;
+
     public int BoardWidth
     {
         get => (int)GetValue(BoardWidthProperty);
@@ -110,7 +115,20 @@ public sealed class PlayfieldBoardView : ContentView
         }
     }
 
-    private void OnTilesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => Rebuild();
+    private void OnTilesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        // Fast path: a single tile was replaced – update only that tile view.
+        if (e.Action == NotifyCollectionChangedAction.Replace &&
+            e.NewItems?.Count == 1 &&
+            e.NewItems[0] is PlayfieldTileItem updatedTile &&
+            tileViews.TryGetValue((updatedTile.X, updatedTile.Y), out var replacedView))
+        {
+            replacedView.Tile = updatedTile;
+            return;
+        }
+
+        Rebuild();
+    }
 
     private void Rebuild()
     {
@@ -161,6 +179,14 @@ public sealed class PlayfieldBoardView : ContentView
                     TileSize = TileSize
                 };
                 view.FlowCompleted += OnTileFlowCompleted;
+
+                // Capture position so the closure stays valid after tile updates.
+                var capturedX = x;
+                var capturedY = y;
+                var tap = new TapGestureRecognizer();
+                tap.Tapped += (_, _) => TileTapped?.Invoke(this, (capturedX, capturedY));
+                view.GestureRecognizers.Add(tap);
+
                 tileViews[(x, y)] = view;
                 grid.Add(view, x, y);
             }

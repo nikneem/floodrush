@@ -70,6 +70,7 @@ public sealed class GameplayViewModel : BaseViewModel
     private CancellationTokenSource? prepCountdownCancellationTokenSource;
     private bool isFlowActive;
     private LevelRevisionDto? loadedRevision;
+    private readonly HashSet<(int X, int Y)> visitedTiles = [];
 
     /// <summary>
     /// Fired when the flow engine wants to animate fluid on a specific tile.
@@ -308,6 +309,7 @@ public sealed class GameplayViewModel : BaseViewModel
         {
             CancelPreparationCountdown();
             isFlowActive = false;
+            visitedTiles.Clear();
             IsGameOver = false;
             IsSuccess = false;
             Score = 0;
@@ -438,6 +440,7 @@ public sealed class GameplayViewModel : BaseViewModel
     {
         loadedRevision = levelRevision;
         isFlowActive = false;
+        visitedTiles.Clear();
         DisplayName = levelRevision.DisplayName;
         Difficulty = string.IsNullOrWhiteSpace(levelRevision.Difficulty)
             ? releasedLevel.Difficulty
@@ -750,6 +753,89 @@ public sealed class GameplayViewModel : BaseViewModel
         return string.IsNullOrWhiteSpace(digits) ? "Level" : $"Level {int.Parse(digits)}";
     }
 
+    // ── Pipe placement ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Places the next-to-place pipe from the bottom of the stack onto the tile at
+    /// (<paramref name="x"/>, <paramref name="y"/>).  Returns <c>true</c> when a
+    /// pipe was successfully placed so the caller can trigger the stack animation.
+    /// </summary>
+    public bool TryPlacePipe(int x, int y)
+    {
+        if (!HasLevelLoaded || isFlowActive || IsGameOver || IsSuccess ||
+            IsPreStartModalVisible || IsPaused)
+        {
+            return false;
+        }
+
+        var tile = BoardTiles.FirstOrDefault(t => t.X == x && t.Y == y);
+        if (tile is null || tile.Kind != PlayfieldTileKind.Empty)
+        {
+            return false;
+        }
+
+        // A pipe that has already been traversed by fluid cannot be replaced.
+        if (tile.PlacedPipeType is not null && visitedTiles.Contains((x, y)))
+        {
+            logger.LogDebug(
+                "Cannot replace pipe at ({X},{Y}) – fluid has already flowed through it.", x, y);
+            return false;
+        }
+
+        if (UpcomingPipes.Count == 0) return false;
+
+        var nextPipe = UpcomingPipes[UpcomingPipes.Count - 1];
+
+        // Replace tile in collection (triggers a single-tile visual update, not a full rebuild)
+        var tileIndex = -1;
+        for (var i = 0; i < BoardTiles.Count; i++)
+        {
+            if (BoardTiles[i].X == x && BoardTiles[i].Y == y) { tileIndex = i; break; }
+        }
+        if (tileIndex < 0) return false;
+
+        BoardTiles[tileIndex] = tile with
+        {
+            PlacedPipeType = nextPipe.PipeType,
+            PipeOverlayImage = GetPipeImage(nextPipe.PipeType),
+            PipeImageRotation = 0d
+        };
+
+        // Remove the placed pipe (bottom of stack)
+        UpcomingPipes.RemoveAt(UpcomingPipes.Count - 1);
+
+        // Promote the new bottom pipe to "next to place"
+        if (UpcomingPipes.Count > 0)
+        {
+            var lastIdx = UpcomingPipes.Count - 1;
+            var prev = UpcomingPipes[lastIdx];
+            UpcomingPipes[lastIdx] = prev with
+            {
+                IsNextToPlace = true,
+                QueueLabel = "Next to place",
+                PreviewOpacity = 1d
+            };
+        }
+
+        // Add a fresh random pipe to the top of the stack
+        var newType = PipeStackGenerator.GenerateInitialStack(1, Random.Shared.Next()).First();
+        UpcomingPipes.Insert(0, new PipeStackItem(
+            newType,
+            GetPipeImage(newType),
+            GetPipeLabel(newType),
+            "Queued above the board",
+            false,
+            0.72d));
+
+        var wasReplacement = tile.PlacedPipeType.HasValue;
+        logger.LogInformation(
+            "{Action} {PipeType} pipe at ({X},{Y}) for level {LevelId}.",
+            wasReplacement ? "Replaced" : "Placed",
+            nextPipe.PipeType, x, y, LevelId);
+
+        return true;
+    }
+
     // ── Flow orchestration ──────────────────────────────────────────────────────
 
     private void BeginFlow()
@@ -790,6 +876,7 @@ public sealed class GameplayViewModel : BaseViewModel
     /// </summary>
     public void OnTileFlowCompleted(TileFlowCompletedEventArgs e)
     {
+        visitedTiles.Add((e.X, e.Y));
         Score += e.PointsEarned;
 
         if (e.IsTerminal)

@@ -17,6 +17,7 @@ public partial class GameplayPage : ContentPage
         this.viewModel.PropertyChanged += OnViewModelPropertyChanged;
         this.viewModel.BeginTileFlow += OnBeginTileFlow;
         BoardView.TileFlowCompleted += OnTileFlowCompleted;
+        BoardView.TileTapped += OnTileTapped;
         BindingContext = viewModel;
     }
 
@@ -70,6 +71,16 @@ public partial class GameplayPage : ContentPage
 
         await Task.Delay(120, cancellationToken);
         viewModel.IsPreStartModalVisible = true;
+    }
+
+    // ── Tile tap – pipe placement ────────────────────────────────────────────────
+
+    private async void OnTileTapped(object? sender, (int X, int Y) pos)
+    {
+        if (viewModel.TryPlacePipe(pos.X, pos.Y))
+        {
+            await PipeStackView.AnimateNewItemAsync();
+        }
     }
 
     // ── Flow animation bridge ────────────────────────────────────────────────────
