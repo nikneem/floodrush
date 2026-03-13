@@ -50,11 +50,23 @@ public sealed class NavigationService : INavigationService
         logger.LogInformation("Navigating to {Target}.", target);
 
         var stopwatch = Stopwatch.StartNew();
-        await Shell.Current.GoToAsync(route);
-        FloodRushTelemetry.OperationDurationMs.Record(stopwatch.Elapsed.TotalMilliseconds, new TagList
+        try
         {
-            { "operation", "navigation" },
-            { "target", target }
-        });
+            await Shell.Current.GoToAsync(route);
+            logger.LogInformation("Navigation to {Target} completed in {ElapsedMs}ms.", target, stopwatch.ElapsedMilliseconds);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Navigation to {Target} failed after {ElapsedMs}ms.", target, stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+        finally
+        {
+            FloodRushTelemetry.OperationDurationMs.Record(stopwatch.Elapsed.TotalMilliseconds, new TagList
+            {
+                { "operation", "navigation" },
+                { "target", target }
+            });
+        }
     }
 }

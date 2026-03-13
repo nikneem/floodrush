@@ -374,7 +374,7 @@ public sealed class GameplayViewModel : BaseViewModel
 
     public async Task LoadLevelAsync(CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("LoadLevelAsync called. LevelId='{LevelId}', IsBusy={IsBusy}.", LevelId, IsBusy);
+        logger.LogInformation("LoadLevelAsync called. LevelId='{LevelId}', IsBusy={IsBusy}.", LevelId, IsBusy);
 
         if (IsBusy || string.IsNullOrWhiteSpace(LevelId))
         {
