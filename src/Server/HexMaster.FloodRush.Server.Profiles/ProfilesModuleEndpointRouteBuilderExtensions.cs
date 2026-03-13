@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using HexMaster.FloodRush.Server.Abstractions.Features;
 using HexMaster.FloodRush.Server.Abstractions.Security;
+using HexMaster.FloodRush.Server.Profiles.Authentication;
 using HexMaster.FloodRush.Server.Profiles.Features.DeviceLogin;
 using HexMaster.FloodRush.Server.Profiles.Features.GetCurrentProfile;
 using HexMaster.FloodRush.Server.Profiles.Features.UpdateProfile;
@@ -15,6 +16,15 @@ public static class ProfilesModuleEndpointRouteBuilderExtensions
 {
     public static IEndpointRouteBuilder MapProfilesModule(this IEndpointRouteBuilder endpoints)
     {
+        endpoints.MapGet("/.well-known/jwks.json", (ITokenSigningKeyProvider keyProvider) =>
+        {
+            var keySet = keyProvider.GetPublicKeySet();
+            return Results.Ok(keySet);
+        })
+        .AllowAnonymous()
+        .WithName("WellKnown_Jwks")
+        .WithTags("Security");
+
         var group = endpoints.MapGroup("/api/profiles").WithTags("Profiles");
 
         group.MapPost("/device/login", async Task<IResult> (
@@ -44,6 +54,7 @@ public static class ProfilesModuleEndpointRouteBuilderExtensions
             }
         })
         .AllowAnonymous()
+        .RequireRateLimiting(RateLimitPolicies.DeviceLogin)
         .WithName("Profiles_DeviceLogin");
 
         group.MapGet("/me", async (
@@ -58,6 +69,7 @@ public static class ProfilesModuleEndpointRouteBuilderExtensions
             return Results.Ok(response);
         })
         .RequireAuthorization()
+        .RequireRateLimiting(RateLimitPolicies.General)
         .WithName("Profiles_GetCurrentProfile");
 
         group.MapPut("/me", async Task<IResult> (
@@ -83,6 +95,7 @@ public static class ProfilesModuleEndpointRouteBuilderExtensions
             }
         })
         .RequireAuthorization()
+        .RequireRateLimiting(RateLimitPolicies.General)
         .WithName("Profiles_UpdateProfile");
 
         return endpoints;

@@ -31,9 +31,9 @@
                         <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
                     </Grid.GestureRecognizers>
 
-                    <ContentPresenter Content="{Binding Source={x:Reference ViewportRoot}, Path=PlayfieldContent}"
-                                      HorizontalOptions="Fill"
-                                      VerticalOptions="Fill" />
+                    <ContentView Content="{Binding Source={x:Reference ViewportRoot}, Path=PlayfieldContent}"
+                             HorizontalOptions="Fill"
+                             VerticalOptions="Fill" />
                 </Grid>
             </ScrollView>
         </Border>

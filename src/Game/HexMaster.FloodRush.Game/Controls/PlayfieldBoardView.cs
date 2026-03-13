@@ -123,7 +123,7 @@ public sealed class PlayfieldBoardView : ContentView
         {
             RowSpacing = TileSpacing,
             ColumnSpacing = TileSpacing,
-            Padding = new Thickness(24),
+            Padding = new Thickness(8),
             WidthRequest = CalculateBoardAxisLength(BoardWidth),
             HeightRequest = CalculateBoardAxisLength(BoardHeight),
             HorizontalOptions = LayoutOptions.Start,
@@ -162,5 +162,5 @@ public sealed class PlayfieldBoardView : ContentView
     private double CalculateBoardAxisLength(int cellCount) =>
         (Math.Max(0, cellCount) * TileSize) +
         (Math.Max(0, cellCount - 1) * TileSpacing) +
-        48d;
+        16d;
 }

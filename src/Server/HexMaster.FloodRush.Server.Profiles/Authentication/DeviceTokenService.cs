@@ -7,7 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace HexMaster.FloodRush.Server.Profiles.Authentication;
 
-internal sealed class DeviceTokenService(IOptions<DeviceTokenOptions> options)
+internal sealed class DeviceTokenService(
+    IOptions<DeviceTokenOptions> options,
+    ITokenSigningKeyProvider signingKeyProvider)
 {
     private readonly DeviceTokenOptions tokenOptions = options.Value;
     private readonly JwtSecurityTokenHandler tokenHandler = new();
@@ -33,9 +35,7 @@ internal sealed class DeviceTokenService(IOptions<DeviceTokenOptions> options)
             Issuer = tokenOptions.Issuer,
             Audience = tokenOptions.Audience,
             Expires = expiresAt.UtcDateTime,
-            SigningCredentials = new SigningCredentials(
-                DeviceTokenOptions.CreateSigningKey(tokenOptions.SigningKey),
-                SecurityAlgorithms.HmacSha256)
+            SigningCredentials = signingKeyProvider.GetCurrentSigningCredentials()
         };
 
         var token = tokenHandler.CreateToken(descriptor);

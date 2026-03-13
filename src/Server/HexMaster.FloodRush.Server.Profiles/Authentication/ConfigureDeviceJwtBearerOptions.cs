@@ -4,7 +4,9 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace HexMaster.FloodRush.Server.Profiles.Authentication;
 
-internal sealed class ConfigureDeviceJwtBearerOptions(IOptions<DeviceTokenOptions> tokenOptions)
+internal sealed class ConfigureDeviceJwtBearerOptions(
+    IOptions<DeviceTokenOptions> tokenOptions,
+    ITokenSigningKeyProvider signingKeyProvider)
     : IConfigureNamedOptions<JwtBearerOptions>
 {
     public void Configure(JwtBearerOptions options) =>
@@ -26,7 +28,9 @@ internal sealed class ConfigureDeviceJwtBearerOptions(IOptions<DeviceTokenOption
             ValidateAudience = true,
             ValidAudience = deviceTokenOptions.Audience,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = DeviceTokenOptions.CreateSigningKey(deviceTokenOptions.SigningKey),
+            IssuerSigningKeyResolver = (_, _, kid, _) =>
+                signingKeyProvider.GetAllValidationKeys()
+                    .Where(k => kid == null || k.KeyId == kid),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };

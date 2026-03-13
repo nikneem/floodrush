@@ -30,6 +30,7 @@ public static class LevelsModuleEndpointRouteBuilderExtensions
             return Results.Ok(response);
         })
         .RequireAuthorization()
+        .RequireRateLimiting(RateLimitPolicies.General)
         .WithName("Levels_GetReleased");
 
         group.MapGet("/{levelId}/revisions/{revision}", async (
@@ -46,6 +47,7 @@ public static class LevelsModuleEndpointRouteBuilderExtensions
             return response is null ? Results.NotFound() : Results.Ok(response);
         })
         .RequireAuthorization()
+        .RequireRateLimiting(RateLimitPolicies.General)
         .WithName("Levels_GetRevision");
 
         group.MapPost("/dev/seed-basic-levels", async (

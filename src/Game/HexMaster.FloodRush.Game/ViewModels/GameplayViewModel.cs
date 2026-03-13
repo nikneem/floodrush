@@ -16,8 +16,8 @@ public sealed class GameplayViewModel : BaseViewModel
 {
     private const int DefaultPipeStackSize = 10;
     private const double DefaultTileRenderSize = 64d;
-    private const double DefaultTileSpacing = 8d;
-    private const double DefaultBoardPadding = 48d;
+    private const double DefaultTileSpacing = 0d;
+    private const double DefaultBoardPadding = 16d;
     private static readonly string[] TileBackgroundImages =
     [
         "empty_tile_background_01.png",
@@ -585,7 +585,9 @@ public sealed class GameplayViewModel : BaseViewModel
                         MapTileKind(fixedTile.TileType),
                         backgroundImage,
                         GetTileTitle(fixedTile.TileType),
-                        GetTileSubtitle(fixedTile)));
+                        GetTileSubtitle(fixedTile),
+                        GetTileOverlayImage(fixedTile.TileType),
+                        GetTileImageRotation(fixedTile)));
                 }
                 else
                 {
@@ -611,7 +613,7 @@ public sealed class GameplayViewModel : BaseViewModel
                 var isNextToPlace = index == generatedPipeTypes.Count - 1;
                 return new PipeStackItem(
                     pipeType,
-                    GetPipeGlyph(pipeType),
+                    GetPipeImage(pipeType),
                     GetPipeLabel(pipeType),
                     isNextToPlace ? "Next to place" : "Queued above the board",
                     isNextToPlace,
@@ -620,17 +622,17 @@ public sealed class GameplayViewModel : BaseViewModel
             .ToArray();
     }
 
-    private static string GetPipeGlyph(PipeSectionType pipeType) =>
+    private static string GetPipeImage(PipeSectionType pipeType) =>
         pipeType switch
         {
-            PipeSectionType.Horizontal => "━",
-            PipeSectionType.Vertical => "┃",
-            PipeSectionType.CornerLeftToTop => "┛",
-            PipeSectionType.CornerRightToTop => "┗",
-            PipeSectionType.CornerLeftToBottom => "┓",
-            PipeSectionType.CornerRightToBottom => "┏",
-            PipeSectionType.Cross => "╋",
-            _ => "?"
+            PipeSectionType.Horizontal => "pipe_section_horiontal.png",
+            PipeSectionType.Vertical => "pipe_section_vertical.png",
+            PipeSectionType.CornerLeftToTop => "pipe_section_corner_left_top.png",
+            PipeSectionType.CornerRightToTop => "pipe_section_corner_right_top.png",
+            PipeSectionType.CornerLeftToBottom => "pipe_section_corner_left_bottom.png",
+            PipeSectionType.CornerRightToBottom => "pipe_section_corner_right_bottom.png",
+            PipeSectionType.Cross => "pipe_section_cross.png",
+            _ => string.Empty
         };
 
     private static string GetPipeLabel(PipeSectionType pipeType) =>
@@ -688,6 +690,38 @@ public sealed class GameplayViewModel : BaseViewModel
             BoardDirectionDto.Right => "→",
             BoardDirectionDto.Bottom => "↓",
             _ => string.Empty
+        };
+
+    private static string GetTileOverlayImage(LevelFixedTileTypeDto tileType) =>
+        tileType switch
+        {
+            LevelFixedTileTypeDto.StartPoint => "pipe_section_start.png",
+            LevelFixedTileTypeDto.FinishPoint => "pipe_section_end.png",
+            _ => string.Empty
+        };
+
+    // Start image exits RIGHT by default; end image connects on LEFT by default.
+    // Rotation is clockwise degrees to align the open end with the tile's actual direction.
+    private static double GetTileImageRotation(LevelFixedTileDto tile) =>
+        tile.TileType switch
+        {
+            LevelFixedTileTypeDto.StartPoint => tile.OutputDirection switch
+            {
+                BoardDirectionDto.Right => 0d,
+                BoardDirectionDto.Bottom => 90d,
+                BoardDirectionDto.Left => 180d,
+                BoardDirectionDto.Top => 270d,
+                _ => 0d
+            },
+            LevelFixedTileTypeDto.FinishPoint => tile.EntryDirection switch
+            {
+                BoardDirectionDto.Left => 0d,
+                BoardDirectionDto.Top => 90d,
+                BoardDirectionDto.Right => 180d,
+                BoardDirectionDto.Bottom => 270d,
+                _ => 0d
+            },
+            _ => 0d
         };
 
     private static string ExtractLevelNumber(string levelId, string displayName)

@@ -42,14 +42,12 @@
                                     <Border Background="{StaticResource AppBackgroundGradientBrush}"
                                             Stroke="{StaticResource SecondaryBrush}"
                                             StrokeThickness="1"
-                                            StrokeShape="RoundRectangle 12">
-                                        <Label Text="{Binding Glyph}"
-                                               HorizontalOptions="Center"
-                                               VerticalOptions="Center"
-                                               HorizontalTextAlignment="Center"
-                                               VerticalTextAlignment="Center"
-                                               FontSize="30"
-                                               TextColor="{StaticResource BrandAmber}"/>
+                                            StrokeShape="RoundRectangle 12"
+                                            Padding="6">
+                                        <Image Source="{Binding PipeImage}"
+                                               Aspect="AspectFit"
+                                               HorizontalOptions="Fill"
+                                               VerticalOptions="Fill"/>
                                     </Border>
 
                                     <VerticalStackLayout Grid.Column="1"

@@ -41,8 +41,8 @@ public partial class ZoomablePlayfieldViewport : ContentView
         PlayfieldViewportMath.DefaultMaxZoom,
         propertyChanged: OnViewportPropertyChanged);
 
-    private double _pinchStartZoom = PlayfieldViewportMath.DefaultMinZoom;
-    private double _currentZoom = PlayfieldViewportMath.DefaultMinZoom;
+    private double _pinchStartZoom = 1.0d;
+    private double _currentZoom = 1.0d;
 #if WINDOWS
     private FrameworkElement? _windowsPlatformView;
 #endif

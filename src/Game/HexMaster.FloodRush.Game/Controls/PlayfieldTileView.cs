@@ -22,6 +22,7 @@ public sealed class PlayfieldTileView : ContentView
     private readonly Border tileBorder;
     private readonly BoxView baseLayer;
     private readonly Image backgroundImage;
+    private readonly Image pipeOverlayImage;
     private readonly BoxView overlay;
     private readonly Label titleLabel;
     private readonly Label subtitleLabel;
@@ -37,6 +38,12 @@ public sealed class PlayfieldTileView : ContentView
         {
             Aspect = Aspect.AspectFill,
             Opacity = 0.96d
+        };
+
+        pipeOverlayImage = new Image
+        {
+            Aspect = Aspect.AspectFit,
+            IsVisible = false
         };
 
         overlay = new BoxView();
@@ -74,18 +81,16 @@ public sealed class PlayfieldTileView : ContentView
         var tileVisual = new Grid();
         tileVisual.Children.Add(baseLayer);
         tileVisual.Children.Add(backgroundImage);
+        tileVisual.Children.Add(pipeOverlayImage);
         tileVisual.Children.Add(overlay);
         tileVisual.Children.Add(tileContent);
 
         tileBorder = new Border
         {
-            Padding = new Thickness(8),
-            StrokeThickness = 1,
+            Padding = new Thickness(0),
+            StrokeThickness = 0,
             Background = new SolidColorBrush(GetColor("CardBackground")),
-            StrokeShape = new RoundRectangle
-            {
-                CornerRadius = new CornerRadius(12)
-            },
+            StrokeShape = new Rectangle(),
             Content = tileVisual
         };
 
@@ -139,6 +144,18 @@ public sealed class PlayfieldTileView : ContentView
         subtitleLabel.Text = tile.Subtitle;
         subtitleLabel.TextColor = GetColor(subtitleColorKey);
         tileBorder.Stroke = GetTileStroke(tile.Kind);
+
+        if (!string.IsNullOrEmpty(tile.PipeOverlayImage))
+        {
+            pipeOverlayImage.Source = ImageSource.FromFile(tile.PipeOverlayImage);
+            pipeOverlayImage.Rotation = tile.PipeImageRotation;
+            pipeOverlayImage.IsVisible = true;
+        }
+        else
+        {
+            pipeOverlayImage.IsVisible = false;
+            pipeOverlayImage.Source = null;
+        }
 
         if (tile.Kind == PlayfieldTileKind.Empty)
         {

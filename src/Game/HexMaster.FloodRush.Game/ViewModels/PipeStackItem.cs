@@ -4,7 +4,7 @@ namespace HexMaster.FloodRush.Game.ViewModels;
 
 public sealed record PipeStackItem(
     PipeSectionType PipeType,
-    string Glyph,
+    string PipeImage,
     string Label,
     string QueueLabel,
     bool IsNextToPlace,

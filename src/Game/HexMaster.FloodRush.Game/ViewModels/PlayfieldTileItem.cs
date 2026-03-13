@@ -15,4 +15,6 @@ public sealed record PlayfieldTileItem(
     PlayfieldTileKind Kind,
     string BackgroundImage,
     string Title,
-    string Subtitle);
+    string Subtitle,
+    string PipeOverlayImage = "",
+    double PipeImageRotation = 0d);

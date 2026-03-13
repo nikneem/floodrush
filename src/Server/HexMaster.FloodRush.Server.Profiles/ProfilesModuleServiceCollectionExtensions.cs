@@ -26,13 +26,17 @@ public static class ProfilesModuleServiceCollectionExtensions
                 static options => options.TokenLifetimeMinutes > 0,
                 "Token lifetime must be greater than zero.")
             .Validate(
-                static options => options.SigningKey.Length >= DeviceTokenOptions.MinimumSigningKeyLength,
-                $"Signing key must be at least {DeviceTokenOptions.MinimumSigningKeyLength} characters long.")
+                static options => options.KeyRotationIntervalMinutes > 0,
+                "Key rotation interval must be greater than zero.")
             .ValidateOnStart();
 
         services.AddSingleton<IConfigureOptions<JwtBearerOptions>, ConfigureDeviceJwtBearerOptions>();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddAuthorization();
+
+        services.AddSingleton<RotatingRsaKeyProvider>();
+        services.AddSingleton<ITokenSigningKeyProvider>(sp => sp.GetRequiredService<RotatingRsaKeyProvider>());
+        services.AddHostedService(sp => sp.GetRequiredService<RotatingRsaKeyProvider>());
 
         services.AddSingleton<DeviceTokenService>();
         services.AddSingleton<IPlayerProfilesRepository, TablePlayerProfilesRepository>();

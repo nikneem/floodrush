@@ -39,6 +39,7 @@ public static class ScoresModuleEndpointRouteBuilderExtensions
             }
         })
         .RequireAuthorization()
+        .RequireRateLimiting(RateLimitPolicies.General)
         .WithName("Scores_Submit");
 
         group.MapGet("/top/{levelId}", async (
@@ -54,6 +55,7 @@ public static class ScoresModuleEndpointRouteBuilderExtensions
             return Results.Ok(response);
         })
         .AllowAnonymous()
+        .RequireRateLimiting(RateLimitPolicies.General)
         .WithName("Scores_GetTop");
 
         return endpoints;
