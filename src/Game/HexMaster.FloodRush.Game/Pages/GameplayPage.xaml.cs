@@ -98,6 +98,7 @@ public partial class GameplayPage : ContentPage
 
         await Task.Delay(120, cancellationToken);
         viewModel.IsPreStartModalVisible = true;
+        viewModel.IsRetrying = false;
     }
 
     // ── Tile tap – pipe placement ────────────────────────────────────────────────

@@ -72,6 +72,7 @@ public sealed class GameplayViewModel : BaseViewModel
     private bool isFlowActive;
     private bool isReplacementPenaltyActive;
     private bool isScoreSubmitting;
+    private bool isRetrying;
     private int? playerHighScore;
     private int? globalHighScore;
     private LevelRevisionDto? loadedRevision;
@@ -182,6 +183,17 @@ public sealed class GameplayViewModel : BaseViewModel
     {
         get => isScoreSubmitting;
         private set => SetField(ref isScoreSubmitting, value);
+    }
+
+    /// <summary>
+    /// True from the moment the player taps "Try Again" until the reset
+    /// animation finishes and the pre-start modal appears. Drives a
+    /// loading overlay so the player knows the reset is in progress.
+    /// </summary>
+    public bool IsRetrying
+    {
+        get => isRetrying;
+        set => SetField(ref isRetrying, value);
     }
 
     public int? PlayerHighScore
@@ -352,6 +364,7 @@ public sealed class GameplayViewModel : BaseViewModel
             }
 
             CancelPreparationCountdown();
+            IsRetrying = true;
             RecordUserAction("retry");
             logger.LogInformation("Retrying level {LevelId}.", LevelId);
             ApplyLevel(loadedReleasedLevel, loadedRevision);

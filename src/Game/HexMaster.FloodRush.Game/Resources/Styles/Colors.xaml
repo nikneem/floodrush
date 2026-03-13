@@ -20,6 +20,7 @@
 
     <Color x:Key="AppBackground">#0d1b2a</Color>
     <Color x:Key="SurfaceBackground">#1a2f45</Color>
+    <Color x:Key="SurfaceSecondary">#253d58</Color>
     <Color x:Key="CardBackground">#1e3650</Color>
     <Color x:Key="CardBackgroundElevated">#243f5e</Color>
 

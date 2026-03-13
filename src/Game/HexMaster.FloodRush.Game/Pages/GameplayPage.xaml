@@ -136,6 +136,23 @@
                 BindingContext="{Binding}"
                 IsVisible="{Binding IsGameOver}"/>
 
+            <!-- Retry loading indicator: shown between "Try Again" and the pre-start modal -->
+            <Grid IsVisible="{Binding IsRetrying}"
+                  BackgroundColor="{StaticResource AppBackground}"
+                  Opacity="0.88">
+                <VerticalStackLayout Spacing="12"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center">
+                    <ActivityIndicator IsRunning="{Binding IsRetrying}"
+                                       Color="{StaticResource BrandAmber}"
+                                       WidthRequest="56"
+                                       HeightRequest="56"/>
+                    <Label Text="Resetting level..."
+                           Style="{StaticResource BodyTextStyle}"
+                           HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </Grid>
+
             <Grid IsVisible="{Binding IsPreStartModalVisible}">
                 <BoxView Color="{StaticResource AppBackground}"
                          Opacity="0.82"/>
