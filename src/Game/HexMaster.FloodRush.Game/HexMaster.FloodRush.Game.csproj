@@ -49,7 +49,7 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#f5b442" />
+		<MauiIcon Include="Resources\AppIcon\app_icon_floodrush.png" Color="#0d1b2a" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash_screen.png" Color="#0d1b2a" BaseSize="400,400" />
