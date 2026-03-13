@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using HexMaster.FloodRush.Game.Controls;
+using HexMaster.FloodRush.Game.Core.Domain.Board;
 using HexMaster.FloodRush.Game.Core.Domain.Pipes;
 using HexMaster.FloodRush.Game.Core.Presentation.Gameplay;
 using HexMaster.FloodRush.Game.Core.Presentation.Viewports;
@@ -66,6 +68,14 @@ public sealed class GameplayViewModel : BaseViewModel
     private double prepTimerOpacity = 1d;
     private bool prepTimerBlinkPhaseVisible = true;
     private CancellationTokenSource? prepCountdownCancellationTokenSource;
+    private bool isFlowActive;
+    private LevelRevisionDto? loadedRevision;
+
+    /// <summary>
+    /// Fired when the flow engine wants to animate fluid on a specific tile.
+    /// Handlers must marshal the animation call to the UI thread.
+    /// </summary>
+    public event EventHandler<BeginTileFlowEventArgs>? BeginTileFlow;
 
     public ObservableCollection<PlayfieldTileItem> BoardTiles { get; } = [];
     public ObservableCollection<PipeStackItem> UpcomingPipes { get; } = [];
@@ -297,6 +307,7 @@ public sealed class GameplayViewModel : BaseViewModel
         RetryCommand = new Command(() =>
         {
             CancelPreparationCountdown();
+            isFlowActive = false;
             IsGameOver = false;
             IsSuccess = false;
             Score = 0;
@@ -425,6 +436,8 @@ public sealed class GameplayViewModel : BaseViewModel
 
     private void ApplyLevel(ReleasedLevelSummaryDto releasedLevel, LevelRevisionDto levelRevision)
     {
+        loadedRevision = levelRevision;
+        isFlowActive = false;
         DisplayName = levelRevision.DisplayName;
         Difficulty = string.IsNullOrWhiteSpace(levelRevision.Difficulty)
             ? releasedLevel.Difficulty
@@ -527,6 +540,12 @@ public sealed class GameplayViewModel : BaseViewModel
         }
         catch (OperationCanceledException)
         {
+        }
+
+        // Countdown finished naturally – start the fluid flow
+        if (!cancellationToken.IsCancellationRequested)
+        {
+            BeginFlow();
         }
     }
 
@@ -730,4 +749,201 @@ public sealed class GameplayViewModel : BaseViewModel
         var digits = new string(source.Where(char.IsDigit).ToArray());
         return string.IsNullOrWhiteSpace(digits) ? "Level" : $"Level {int.Parse(digits)}";
     }
+
+    // ── Flow orchestration ──────────────────────────────────────────────────────
+
+    private void BeginFlow()
+    {
+        if (!HasLevelLoaded || loadedRevision is null) return;
+
+        var startFixed = loadedRevision.FixedTiles
+            .FirstOrDefault(t => t.TileType == LevelFixedTileTypeDto.StartPoint);
+        if (startFixed is null)
+        {
+            EndFlowFailed();
+            return;
+        }
+
+        isFlowActive = true;
+        var exitDir = ToGameDirection(startFixed.OutputDirection ?? BoardDirectionDto.Right);
+        var entryDir = Opposite(exitDir);
+
+        logger.LogInformation(
+            "Flow starting at ({X},{Y}) exiting {Exit} for level {LevelId}.",
+            startFixed.X, startFixed.Y, exitDir, LevelId);
+
+        BeginTileFlow?.Invoke(this, new BeginTileFlowEventArgs
+        {
+            X = startFixed.X,
+            Y = startFixed.Y,
+            EntryDirection = entryDir,
+            ExitDirection = exitDir,
+            Points = startFixed.BonusPoints,
+            DurationMs = CalculateFlowDuration(),
+            IsTerminal = false
+        });
+    }
+
+    /// <summary>
+    /// Called by <see cref="Pages.GameplayPage"/> when a tile finishes its flow animation.
+    /// Updates the score and triggers the next tile's animation, or ends the flow.
+    /// </summary>
+    public void OnTileFlowCompleted(TileFlowCompletedEventArgs e)
+    {
+        Score += e.PointsEarned;
+
+        if (e.IsTerminal)
+        {
+            isFlowActive = false;
+            IsSuccess = true;
+            logger.LogInformation(
+                "Level {LevelId} completed successfully. Final score: {Score}.", LevelId, Score);
+            return;
+        }
+
+        if (!isFlowActive) return;
+
+        var (nextX, nextY) = GetAdjacentPosition(e.X, e.Y, e.ExitDirection);
+        var entryDir = Opposite(e.ExitDirection);
+
+        var nextTile = BoardTiles.FirstOrDefault(t => t.X == nextX && t.Y == nextY);
+        if (nextTile is null)
+        {
+            logger.LogInformation(
+                "Flow exited the board at ({X},{Y}) → ({NX},{NY}) for level {LevelId}.",
+                e.X, e.Y, nextX, nextY, LevelId);
+            EndFlowFailed();
+            return;
+        }
+
+        var flowInfo = GetTileFlowInfo(nextTile, entryDir);
+        if (!flowInfo.HasValue)
+        {
+            logger.LogInformation(
+                "Flow blocked at ({X},{Y}) entering {Entry} for level {LevelId}.",
+                nextX, nextY, entryDir, LevelId);
+            EndFlowFailed();
+            return;
+        }
+
+        var (nextExitDir, nextPoints, isTerminal) = flowInfo.Value;
+
+        BeginTileFlow?.Invoke(this, new BeginTileFlowEventArgs
+        {
+            X = nextX,
+            Y = nextY,
+            EntryDirection = entryDir,
+            ExitDirection = nextExitDir,
+            Points = nextPoints,
+            DurationMs = CalculateFlowDuration(),
+            IsTerminal = isTerminal
+        });
+    }
+
+    private (BoardDirection exitDir, int points, bool isTerminal)? GetTileFlowInfo(
+        PlayfieldTileItem tile, BoardDirection entry)
+    {
+        var fixedTile = loadedRevision?.FixedTiles
+            .FirstOrDefault(f => f.X == tile.X && f.Y == tile.Y);
+
+        if (fixedTile is not null)
+        {
+            return fixedTile.TileType switch
+            {
+                LevelFixedTileTypeDto.FinishPoint => HandleFinishPoint(fixedTile, entry),
+                LevelFixedTileTypeDto.StartPoint => null, // cannot re-enter start
+                _ => null
+            };
+        }
+
+        if (tile.PlacedPipeType is null) return null; // empty tile – flow blocked
+
+        try
+        {
+            var exitDir = GetPipeExitDirection(tile.PlacedPipeType.Value, entry);
+            var pts = GetPipeBasePoints(tile.PlacedPipeType.Value);
+            return (exitDir, pts, false);
+        }
+        catch (InvalidOperationException)
+        {
+            return null; // incompatible entry direction
+        }
+    }
+
+    private static (BoardDirection exitDir, int points, bool isTerminal)? HandleFinishPoint(
+        LevelFixedTileDto fixedTile, BoardDirection entry)
+    {
+        var expected = ToGameDirection(fixedTile.EntryDirection ?? BoardDirectionDto.Left);
+        return expected == entry
+            ? (entry, fixedTile.BonusPoints, true)
+            : null; // fluid arrived from the wrong side
+    }
+
+    private void EndFlowFailed()
+    {
+        isFlowActive = false;
+        IsGameOver = true;
+        logger.LogInformation(
+            "Flow failed for level {LevelId}. Score at failure: {Score}.", LevelId, Score);
+    }
+
+    private int CalculateFlowDuration() =>
+        Math.Max(150, 1000 - FlowSpeedIndicator * 8);
+
+    private static (int x, int y) GetAdjacentPosition(int x, int y, BoardDirection direction) =>
+        direction switch
+        {
+            BoardDirection.Left => (x - 1, y),
+            BoardDirection.Right => (x + 1, y),
+            BoardDirection.Top => (x, y - 1),
+            BoardDirection.Bottom => (x, y + 1),
+            _ => (x, y)
+        };
+
+    private static BoardDirection Opposite(BoardDirection dir) =>
+        dir switch
+        {
+            BoardDirection.Left => BoardDirection.Right,
+            BoardDirection.Right => BoardDirection.Left,
+            BoardDirection.Top => BoardDirection.Bottom,
+            BoardDirection.Bottom => BoardDirection.Top,
+            _ => dir
+        };
+
+    private static BoardDirection ToGameDirection(BoardDirectionDto dto) =>
+        (BoardDirection)(int)dto;
+
+    private static BoardDirection GetPipeExitDirection(PipeSectionType pipeType, BoardDirection entry) =>
+        (pipeType, entry) switch
+        {
+            (PipeSectionType.Horizontal, BoardDirection.Left) => BoardDirection.Right,
+            (PipeSectionType.Horizontal, BoardDirection.Right) => BoardDirection.Left,
+            (PipeSectionType.Vertical, BoardDirection.Top) => BoardDirection.Bottom,
+            (PipeSectionType.Vertical, BoardDirection.Bottom) => BoardDirection.Top,
+            (PipeSectionType.CornerLeftToTop, BoardDirection.Left) => BoardDirection.Top,
+            (PipeSectionType.CornerLeftToTop, BoardDirection.Top) => BoardDirection.Left,
+            (PipeSectionType.CornerRightToTop, BoardDirection.Right) => BoardDirection.Top,
+            (PipeSectionType.CornerRightToTop, BoardDirection.Top) => BoardDirection.Right,
+            (PipeSectionType.CornerLeftToBottom, BoardDirection.Left) => BoardDirection.Bottom,
+            (PipeSectionType.CornerLeftToBottom, BoardDirection.Bottom) => BoardDirection.Left,
+            (PipeSectionType.CornerRightToBottom, BoardDirection.Right) => BoardDirection.Bottom,
+            (PipeSectionType.CornerRightToBottom, BoardDirection.Bottom) => BoardDirection.Right,
+            (PipeSectionType.Cross, _) => Opposite(entry), // cross passes through on same axis
+            _ => throw new InvalidOperationException(
+                $"Cannot flow from {entry} through {pipeType}.")
+        };
+
+    // Base point values match PlaceablePipeSectionDefinition.CreateRequiredSections()
+    private static int GetPipeBasePoints(PipeSectionType pipeType) =>
+        pipeType switch
+        {
+            PipeSectionType.Horizontal => 10,
+            PipeSectionType.Vertical => 12,
+            PipeSectionType.CornerLeftToTop => 14,
+            PipeSectionType.CornerRightToTop => 15,
+            PipeSectionType.CornerLeftToBottom => 16,
+            PipeSectionType.CornerRightToBottom => 17,
+            PipeSectionType.Cross => 20,
+            _ => 0
+        };
 }

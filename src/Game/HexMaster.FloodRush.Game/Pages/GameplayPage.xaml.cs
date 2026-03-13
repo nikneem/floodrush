@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using HexMaster.FloodRush.Game.Controls;
 using HexMaster.FloodRush.Game.ViewModels;
 
 namespace HexMaster.FloodRush.Game.Pages;
@@ -14,6 +15,8 @@ public partial class GameplayPage : ContentPage
         InitializeComponent();
         this.viewModel = viewModel;
         this.viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        this.viewModel.BeginTileFlow += OnBeginTileFlow;
+        BoardView.TileFlowCompleted += OnTileFlowCompleted;
         BindingContext = viewModel;
     }
 
@@ -67,5 +70,20 @@ public partial class GameplayPage : ContentPage
 
         await Task.Delay(120, cancellationToken);
         viewModel.IsPreStartModalVisible = true;
+    }
+
+    // ── Flow animation bridge ────────────────────────────────────────────────────
+
+    private void OnBeginTileFlow(object? sender, BeginTileFlowEventArgs e)
+    {
+        // Animations must run on the UI thread. BeginTileFlow may fire from a
+        // background thread (countdown task), so we always marshal here.
+        MainThread.BeginInvokeOnMainThread(async () => await BoardView.AnimateTileFlowAsync(e));
+    }
+
+    private void OnTileFlowCompleted(object? sender, TileFlowCompletedEventArgs e)
+    {
+        // Already on the UI thread (raised by MAUI animation continuations).
+        viewModel.OnTileFlowCompleted(e);
     }
 }

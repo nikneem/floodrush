@@ -11,11 +11,10 @@
     </ContentPage.Background>
 
     <Grid RowDefinitions="Auto,*">
-        <!-- HUD header row -->
-        <Border Grid.Row="0"
-                Background="{StaticResource SurfaceBackgroundBrush}"
-                Padding="16,8">
-             <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+            <Border Grid.Row="0"
+                    Background="{StaticResource SurfaceBackgroundBrush}"
+                    Padding="16,8">
+             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
                  <Label Grid.Column="0"
                        Text="{Binding LevelDisplayName}"
                        Style="{StaticResource SectionHeadingStyle}"
@@ -41,13 +40,22 @@
                             FontSize="14"/>
                 </StackLayout>
 
-                <Button Grid.Column="3"
-                        Text="⏸"
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Padding="12,6"
-                        FontSize="18"
-                        Command="{Binding PauseCommand}"/>
-            </Grid>
+                 <StackLayout Grid.Column="3" Orientation="Horizontal" Spacing="4"
+                              VerticalOptions="Center" Margin="0,0,24,0">
+                     <Label Text="Score: " Style="{StaticResource MutedTextStyle}" FontSize="14"/>
+                     <Label Text="{Binding Score}"
+                            TextColor="{StaticResource BrandAmber}"
+                            FontAttributes="Bold"
+                            FontSize="14"/>
+                 </StackLayout>
+
+                 <Button Grid.Column="4"
+                         Text="⏸"
+                         Style="{StaticResource SecondaryButtonStyle}"
+                         Padding="12,6"
+                         FontSize="18"
+                         Command="{Binding PauseCommand}"/>
+             </Grid>
         </Border>
 
         <!-- Game board area -->
@@ -67,7 +75,8 @@
                                                     MinZoom="{Binding MinTileZoom}"
                                                     MaxZoom="{Binding MaxTileZoom}">
                     <controls:ZoomablePlayfieldViewport.PlayfieldContent>
-                        <controls:PlayfieldBoardView BoardWidth="{Binding BoardWidth}"
+                        <controls:PlayfieldBoardView x:Name="BoardView"
+                                                     BoardWidth="{Binding BoardWidth}"
                                                      BoardHeight="{Binding BoardHeight}"
                                                      Tiles="{Binding BoardTiles}"
                                                      TileSize="{Binding TileRenderSize}"

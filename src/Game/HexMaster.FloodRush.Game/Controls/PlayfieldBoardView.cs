@@ -40,6 +40,10 @@ public sealed class PlayfieldBoardView : ContentView
         propertyChanged: OnBoardPropertyChanged);
 
     private INotifyCollectionChanged? observableTiles;
+    private readonly Dictionary<(int X, int Y), PlayfieldTileView> tileViews = new();
+
+    /// <summary>Raised when any tile's flow animation completes.</summary>
+    public event EventHandler<TileFlowCompletedEventArgs>? TileFlowCompleted;
 
     public int BoardWidth
     {
@@ -112,9 +116,12 @@ public sealed class PlayfieldBoardView : ContentView
     {
         if (BoardWidth <= 0 || BoardHeight <= 0)
         {
+            ClearTileViews();
             Content = null;
             return;
         }
+
+        ClearTileViews();
 
         var tileLookup = (Tiles ?? [])
             .ToDictionary(tile => (tile.X, tile.Y));
@@ -148,15 +155,50 @@ public sealed class PlayfieldBoardView : ContentView
                     ? mappedTile
                     : new PlayfieldTileItem(x, y, PlayfieldTileKind.Empty, "empty_tile_background_01.png", string.Empty, string.Empty);
 
-                grid.Add(new PlayfieldTileView
+                var view = new PlayfieldTileView
                 {
                     Tile = tile,
                     TileSize = TileSize
-                }, x, y);
+                };
+                view.FlowCompleted += OnTileFlowCompleted;
+                tileViews[(x, y)] = view;
+                grid.Add(view, x, y);
             }
         }
 
         Content = grid;
+    }
+
+    private void ClearTileViews()
+    {
+        foreach (var view in tileViews.Values)
+        {
+            view.FlowCompleted -= OnTileFlowCompleted;
+        }
+
+        tileViews.Clear();
+    }
+
+    private void OnTileFlowCompleted(object? sender, TileFlowCompletedEventArgs e) =>
+        TileFlowCompleted?.Invoke(this, e);
+
+    /// <summary>
+    /// Triggers a fluid-flow animation on the tile at the given position.
+    /// Returns immediately if no tile view exists at that position.
+    /// </summary>
+    public Task AnimateTileFlowAsync(BeginTileFlowEventArgs args)
+    {
+        if (tileViews.TryGetValue((args.X, args.Y), out var view))
+        {
+            return view.BeginFlowAsync(
+                args.EntryDirection,
+                args.ExitDirection,
+                args.Points,
+                args.DurationMs,
+                args.IsTerminal);
+        }
+
+        return Task.CompletedTask;
     }
 
     private double CalculateBoardAxisLength(int cellCount) =>

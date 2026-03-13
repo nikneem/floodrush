@@ -1,3 +1,5 @@
+using HexMaster.FloodRush.Game.Core.Domain.Pipes;
+
 namespace HexMaster.FloodRush.Game.ViewModels;
 
 public enum PlayfieldTileKind
@@ -17,4 +19,5 @@ public sealed record PlayfieldTileItem(
     string Title,
     string Subtitle,
     string PipeOverlayImage = "",
-    double PipeImageRotation = 0d);
+    double PipeImageRotation = 0d,
+    PipeSectionType? PlacedPipeType = null);

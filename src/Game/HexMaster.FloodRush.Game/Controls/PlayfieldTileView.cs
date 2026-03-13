@@ -1,3 +1,4 @@
+using HexMaster.FloodRush.Game.Core.Domain.Board;
 using HexMaster.FloodRush.Game.ViewModels;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -26,6 +27,10 @@ public sealed class PlayfieldTileView : ContentView
     private readonly BoxView overlay;
     private readonly Label titleLabel;
     private readonly Label subtitleLabel;
+    private readonly BoxView fluidBlob;
+    private readonly Label pointsLabel;
+
+    public event EventHandler<TileFlowCompletedEventArgs>? FlowCompleted;
 
     public PlayfieldTileView()
     {
@@ -78,12 +83,37 @@ public sealed class PlayfieldTileView : ContentView
         tileContent.Children.Add(titleLabel);
         tileContent.Children.Add(subtitleLabel);
 
+        // Fluid animation blob – centred in the tile, offset via TranslationX/Y
+        fluidBlob = new BoxView
+        {
+            IsVisible = false,
+            InputTransparent = true,
+            Color = Color.FromArgb("#3FB8F5"),
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        // "+N pts" pop-up label shown after the blob reaches its destination
+        pointsLabel = new Label
+        {
+            IsVisible = false,
+            InputTransparent = true,
+            TextColor = Colors.White,
+            FontAttributes = FontAttributes.Bold,
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center,
+            HorizontalTextAlignment = TextAlignment.Center,
+            VerticalTextAlignment = TextAlignment.Center
+        };
+
         var tileVisual = new Grid();
         tileVisual.Children.Add(baseLayer);
         tileVisual.Children.Add(backgroundImage);
         tileVisual.Children.Add(pipeOverlayImage);
         tileVisual.Children.Add(overlay);
         tileVisual.Children.Add(tileContent);
+        tileVisual.Children.Add(fluidBlob);    // on top of content
+        tileVisual.Children.Add(pointsLabel);  // topmost
 
         tileBorder = new Border
         {
@@ -225,5 +255,93 @@ public sealed class PlayfieldTileView : ContentView
         }
 
         throw new InvalidOperationException($"Resource '{key}' was not found.");
+    }
+
+    /// <summary>
+    /// Animates fluid flowing from <paramref name="entryDirection"/> through this tile to
+    /// <paramref name="exitDirection"/>, then shows a "+points" pop-up and raises
+    /// <see cref="FlowCompleted"/>.
+    /// </summary>
+    public async Task BeginFlowAsync(
+        BoardDirection entryDirection,
+        BoardDirection exitDirection,
+        int points,
+        int durationMs,
+        bool isTerminal = false)
+    {
+        var size = TileSize > 0 ? TileSize : 64d;
+        var blobSize = Math.Max(8d, size * 0.26);
+
+        fluidBlob.WidthRequest = blobSize;
+        fluidBlob.HeightRequest = blobSize;
+        fluidBlob.CornerRadius = new CornerRadius(blobSize / 2d);
+
+        var (entryTx, entryTy) = GetEdgeOffset(entryDirection, size);
+        var (exitTx, exitTy) = GetEdgeOffset(exitDirection, size);
+        var halfDuration = (uint)Math.Max(80, durationMs / 2);
+
+        // Start the blob at the entry edge
+        fluidBlob.TranslationX = entryTx;
+        fluidBlob.TranslationY = entryTy;
+        fluidBlob.Opacity = 0.92d;
+        fluidBlob.IsVisible = true;
+
+        // Phase 1: entry edge → tile centre
+        await fluidBlob.TranslateTo(0, 0, halfDuration, Easing.CubicIn);
+
+        if (!isTerminal)
+        {
+            // Phase 2: tile centre → exit edge
+            await fluidBlob.TranslateTo(exitTx, exitTy, halfDuration, Easing.CubicOut);
+        }
+
+        fluidBlob.IsVisible = false;
+        fluidBlob.TranslationX = 0;
+        fluidBlob.TranslationY = 0;
+
+        // Show "+N pts" pop-up when points were earned
+        if (points > 0)
+        {
+            pointsLabel.Text = $"+{points}";
+            pointsLabel.FontSize = Math.Max(10d, size * 0.22);
+            pointsLabel.Opacity = 0;
+            pointsLabel.Scale = 0.5;
+            pointsLabel.TranslationY = 0;
+            pointsLabel.IsVisible = true;
+
+            await Task.WhenAll(
+                pointsLabel.FadeTo(1.0, 200, Easing.CubicOut),
+                pointsLabel.ScaleTo(1.1, 200, Easing.CubicOut));
+
+            await Task.Delay(300);
+
+            await Task.WhenAll(
+                pointsLabel.TranslateTo(0, -size * 0.45, 350, Easing.CubicIn),
+                pointsLabel.FadeTo(0, 350, Easing.CubicIn));
+
+            pointsLabel.IsVisible = false;
+            pointsLabel.TranslationY = 0;
+        }
+
+        FlowCompleted?.Invoke(this, new TileFlowCompletedEventArgs(
+            Tile?.X ?? 0,
+            Tile?.Y ?? 0,
+            isTerminal ? entryDirection : exitDirection,
+            points,
+            isTerminal));
+    }
+
+    // Returns the translation offset from the tile centre to the centre of each edge.
+    private static (double x, double y) GetEdgeOffset(BoardDirection direction, double tileSize)
+    {
+        var half = tileSize / 2d;
+        return direction switch
+        {
+            BoardDirection.Left => (-half, 0),
+            BoardDirection.Right => (half, 0),
+            BoardDirection.Top => (0, -half),
+            BoardDirection.Bottom => (0, half),
+            _ => (0, 0)
+        };
     }
 }
