@@ -22,8 +22,10 @@ Define the minimum server capabilities and API surface needed by the client.
 
 ## Required API areas
 ### Device authentication
-- Device login endpoint that accepts a unique device identifier over HTTPS
-- Server-issued JWT token for subsequent authenticated requests
+- Device registration endpoint that binds a generated device identifier to a device-owned public key over HTTPS
+- Challenge-response login endpoints that require proof of possession of the device private key
+- Server-issued short-lived JWT access token for subsequent authenticated requests
+- Opaque rotating refresh token support for continued authenticated requests without re-running the full login flow on every call
 - Protected endpoint support using bearer token authentication
 
 ### Profiles
@@ -53,17 +55,22 @@ Define the minimum server capabilities and API surface needed by the client.
 - Include revision, timestamp, and correlation metadata needed for sync.
 - Prefer additive contract evolution for future compatibility.
 - Device JWTs must include the device identifier as a claim that downstream endpoints can trust after signature validation.
+- Device authentication must not rely on an embedded shared client secret.
+- Refresh tokens must be opaque server-managed secrets that are stored hashed on the server and rotated after every successful use.
 - Module endpoints should stay thin and delegate behavior to feature handlers.
 - In development, the API should expose a Scalar API reference over the generated OpenAPI document so contributors can inspect and exercise the contract quickly.
 
 ## Server-side validation
 - Reject malformed device identifiers.
+- Reject malformed public keys, signatures, refresh tokens, and login challenge identifiers.
+- Reject expired or already-consumed login challenges.
+- Detect refresh-token reuse and revoke the affected token family.
 - Reject score submissions that reference unknown or unreleased levels.
 - Validate profile ownership for requested data.
 - Validate required fields and supported schema versions.
 - Keep Azure Table row and partition keys stable and explicit per module.
 
 ## Acceptance criteria
-- The client can obtain a JWT using its device identifier and then perform authenticated profile creation, released-level sync, level download, score upload, and settings sync using stable contracts.
+- The client can register a device key, complete a challenge-response login, rotate refresh tokens, and then perform authenticated profile creation, released-level sync, level download, score upload, and settings sync using stable contracts.
 - The server codebase is organized by module and feature slice rather than by technical layer alone.
 - Running the API project directly in development opens the browser to the Scalar endpoint by default.
