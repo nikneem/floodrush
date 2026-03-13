@@ -14,8 +14,14 @@ public sealed class NavigationService : INavigationService
         this.logger = logger;
     }
 
-    public Task NavigateToLevelSelectionAsync() =>
-        NavigateAsync(AppRoutes.LevelSelection, "level-selection");
+    public Task NavigateToLevelSelectionAsync(bool refreshLevels = false)
+    {
+        var route = refreshLevels
+            ? $"{AppRoutes.LevelSelection}?refreshLevels=true"
+            : AppRoutes.LevelSelection;
+
+        return NavigateAsync(route, "level-selection");
+    }
 
     public Task NavigateToGameplayAsync(string levelId) =>
         NavigateAsync($"{AppRoutes.Gameplay}?levelId={levelId}", "gameplay", levelId);

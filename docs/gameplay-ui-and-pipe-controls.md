@@ -25,7 +25,8 @@ The gameplay screen is divided into three horizontal zones:
 ```
 
 - **HUD strip** — fixed height (~48 dp): level name, current score, flow speed indicator, and the pre-flow countdown.
-- **Pipe stack sidebar** — fixed width (~80–100 dp): 10 upcoming pipe sections, stacked vertically.
+- **Pipe stack sidebar** — fixed width (~180–220 dp): 10 upcoming pipe sections, stacked vertically with enough room for a readable preview label.
+- When a level loads, the current 10-item stack drops into the sidebar from above with a gravity-style settling animation.
 - **Playfield viewport** — fills remaining space: a clipped viewport that hosts the level board and can pan around oversized layouts.
 
 ---
@@ -50,6 +51,7 @@ The stack is the player's queue of upcoming pipe sections.
 - The **bottom item** has an amber highlight border — the "next to place" indicator.
 - Items above it are shown at reduced opacity (queued, not yet active).
 - A brief slide-down animation plays when an item is consumed.
+- The initial queue also animates in from the top so the stack visibly settles from top to bottom when gameplay opens.
 
 ---
 
@@ -133,13 +135,16 @@ public class FlowCompletedEventArgs : EventArgs
 
 The grid renders the full level board. Each cell maps to a `GridPosition`.
 
+Each board cell is its own MAUI tile control, so the level-defined row and column count directly determines how many tile views are created inside the zoomable playfield viewport.
+
 ### Viewport interaction
 
 - The board may be larger than the visible gameplay area.
-- Players can pinch to zoom the playfield between **100% and 300%**.
+- Players can pinch to zoom the playfield, but individual tiles are capped at the native **128 × 128** pixel background-art size.
 - Players can drag to pan across the board whenever the current zoom level or board size causes overflow in either direction.
 - Zoom and pan only change what part of the board is visible; they do not affect scoring, timing, or placement rules.
 - The first playable slice renders the downloaded released-level board immediately so the player can inspect the fixed tiles before starting.
+- Every playfield cell gets a randomized `empty_tile_background_{x}.png` texture when the board is built, and those assignments stay stable for that loaded level so redraws do not reshuffle the art.
 
 ### Cell states
 
@@ -168,7 +173,7 @@ The grid renders the full level board. Each cell maps to a `GridPosition`.
 
 ## Pre-start modal
 
-When gameplay loads a released level from the server, the board stays visible and a centered summary card appears above it. The card shows:
+When gameplay loads a released level from the server, the board and the left-side pipe stack are rendered first so the player can see the full empty-tile playfield before a centered summary card appears above it. The card shows:
 
 - Level number
 - Difficulty

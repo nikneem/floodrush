@@ -1,6 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using HexMaster.FloodRush.Game.Core.Domain.Pipes;
+using HexMaster.FloodRush.Game.Core.Presentation.Gameplay;
+using HexMaster.FloodRush.Game.Core.Presentation.Viewports;
 using HexMaster.FloodRush.Game.Diagnostics;
 using HexMaster.FloodRush.Game.Services;
 using HexMaster.FloodRush.Shared.Contracts.Levels;
@@ -11,9 +14,29 @@ namespace HexMaster.FloodRush.Game.ViewModels;
 [QueryProperty(nameof(LevelId), "levelId")]
 public sealed class GameplayViewModel : BaseViewModel
 {
+    private const int DefaultPipeStackSize = 10;
     private const double DefaultTileRenderSize = 120d;
     private const double DefaultTileSpacing = 8d;
     private const double DefaultBoardPadding = 48d;
+    private static readonly string[] TileBackgroundImages =
+    [
+        "empty_tile_background_01.png",
+        "empty_tile_background_02.png",
+        "empty_tile_background_03.png",
+        "empty_tile_background_04.png",
+        "empty_tile_background_05.png",
+        "empty_tile_background_06.png",
+        "empty_tile_background_07.png",
+        "empty_tile_background_08.png",
+        "empty_tile_background_09.png",
+        "empty_tile_background_10.png",
+        "empty_tile_background_11.png",
+        "empty_tile_background_12.png",
+        "empty_tile_background_13.png",
+        "empty_tile_background_14.png",
+        "empty_tile_background_15.png",
+        "empty_tile_background_16.png"
+    ];
 
     private readonly INavigationService navigation;
     private readonly ILocalStateService localState;
@@ -38,9 +61,11 @@ public sealed class GameplayViewModel : BaseViewModel
     private int flowTimeoutSeconds;
     private int flowSpeedIndicator;
     private int remainingPrepSeconds;
+    private int pipeStackAnimationVersion;
     private CancellationTokenSource? prepCountdownCancellationTokenSource;
 
     public ObservableCollection<PlayfieldTileItem> BoardTiles { get; } = [];
+    public ObservableCollection<PipeStackItem> UpcomingPipes { get; } = [];
 
     public string LevelId
     {
@@ -177,9 +202,17 @@ public sealed class GameplayViewModel : BaseViewModel
         set => SetField(ref remainingPrepSeconds, value);
     }
 
+    public int PipeStackAnimationVersion
+    {
+        get => pipeStackAnimationVersion;
+        private set => SetField(ref pipeStackAnimationVersion, value);
+    }
+
     public double TileRenderSize => DefaultTileRenderSize;
 
     public double TileSpacing => DefaultTileSpacing;
+
+    public double MaxTileZoom => PlayfieldViewportMath.CalculateMaxZoomForTileSize(TileRenderSize);
 
     public double BoardPixelWidth =>
         BoardWidth <= 0
@@ -278,6 +311,7 @@ public sealed class GameplayViewModel : BaseViewModel
         IsPreStartModalVisible = false;
         HasLevelLoaded = false;
         BoardTiles.Clear();
+        UpcomingPipes.Clear();
         BoardWidth = 0;
         BoardHeight = 0;
         logger.LogInformation("Loading gameplay level {LevelId}. Online={HasInternetAccess}.", LevelId, networkStatus.HasInternetAccess);
@@ -291,7 +325,6 @@ public sealed class GameplayViewModel : BaseViewModel
             localState.SetCurrentLevelId(releasedLevel.LevelId);
             loadedLevelId = releasedLevel.LevelId;
             HasLevelLoaded = true;
-            IsPreStartModalVisible = true;
 
             activity?.SetTag("level.source", source);
             activity?.SetStatus(ActivityStatusCode.Ok);
@@ -386,6 +419,13 @@ public sealed class GameplayViewModel : BaseViewModel
         {
             BoardTiles.Add(tile);
         }
+
+        foreach (var pipe in BuildPipeStack())
+        {
+            UpcomingPipes.Add(pipe);
+        }
+
+        PipeStackAnimationVersion++;
     }
 
     private void StartLevel()
@@ -458,29 +498,82 @@ public sealed class GameplayViewModel : BaseViewModel
     {
         var fixedTileLookup = levelRevision.FixedTiles.ToDictionary(tile => (tile.X, tile.Y));
         var tiles = new List<PlayfieldTileItem>(levelRevision.BoardWidth * levelRevision.BoardHeight);
+        var random = new Random(HashCode.Combine(levelRevision.LevelId, levelRevision.Revision));
 
         for (var y = 0; y < levelRevision.BoardHeight; y++)
         {
             for (var x = 0; x < levelRevision.BoardWidth; x++)
             {
+                var backgroundImage = TileBackgroundImages[random.Next(TileBackgroundImages.Length)];
+
                 if (fixedTileLookup.TryGetValue((x, y), out var fixedTile))
                 {
                     tiles.Add(new PlayfieldTileItem(
                         x,
                         y,
                         MapTileKind(fixedTile.TileType),
+                        backgroundImage,
                         GetTileTitle(fixedTile.TileType),
                         GetTileSubtitle(fixedTile)));
                 }
                 else
                 {
-                    tiles.Add(new PlayfieldTileItem(x, y, PlayfieldTileKind.Empty, string.Empty, string.Empty));
+                    tiles.Add(new PlayfieldTileItem(x, y, PlayfieldTileKind.Empty, backgroundImage, string.Empty, string.Empty));
                 }
             }
         }
 
         return tiles;
     }
+
+    private IReadOnlyCollection<PipeStackItem> BuildPipeStack()
+    {
+        var generatedPipeTypes = PipeStackGenerator.GenerateInitialStack(
+            DefaultPipeStackSize,
+            Random.Shared.Next());
+
+        logger.LogInformation("Generated a gameplay pipe stack with {Count} upcoming tiles.", generatedPipeTypes.Count);
+
+        return generatedPipeTypes
+            .Select((pipeType, index) =>
+            {
+                var isNextToPlace = index == generatedPipeTypes.Count - 1;
+                return new PipeStackItem(
+                    pipeType,
+                    GetPipeGlyph(pipeType),
+                    GetPipeLabel(pipeType),
+                    isNextToPlace ? "Next to place" : "Queued above the board",
+                    isNextToPlace,
+                    isNextToPlace ? 1d : 0.72d);
+            })
+            .ToArray();
+    }
+
+    private static string GetPipeGlyph(PipeSectionType pipeType) =>
+        pipeType switch
+        {
+            PipeSectionType.Horizontal => "━",
+            PipeSectionType.Vertical => "┃",
+            PipeSectionType.CornerLeftToTop => "┛",
+            PipeSectionType.CornerRightToTop => "┗",
+            PipeSectionType.CornerLeftToBottom => "┓",
+            PipeSectionType.CornerRightToBottom => "┏",
+            PipeSectionType.Cross => "╋",
+            _ => "?"
+        };
+
+    private static string GetPipeLabel(PipeSectionType pipeType) =>
+        pipeType switch
+        {
+            PipeSectionType.Horizontal => "Horizontal",
+            PipeSectionType.Vertical => "Vertical",
+            PipeSectionType.CornerLeftToTop => "Left to top",
+            PipeSectionType.CornerRightToTop => "Right to top",
+            PipeSectionType.CornerLeftToBottom => "Left to bottom",
+            PipeSectionType.CornerRightToBottom => "Right to bottom",
+            PipeSectionType.Cross => "Cross",
+            _ => pipeType.ToString()
+        };
 
     private static PlayfieldTileKind MapTileKind(LevelFixedTileTypeDto tileType) =>
         tileType switch

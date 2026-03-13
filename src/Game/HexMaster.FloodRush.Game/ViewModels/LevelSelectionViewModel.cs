@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace HexMaster.FloodRush.Game.ViewModels;
 
+[QueryProperty(nameof(RefreshLevels), "refreshLevels")]
 public sealed class LevelSelectionViewModel : BaseViewModel
 {
     private readonly INavigationService navigation;
@@ -17,8 +18,14 @@ public sealed class LevelSelectionViewModel : BaseViewModel
     private readonly ILevelsApiService levelsApiService;
     private readonly ILogger<LevelSelectionViewModel> logger;
     private string loadErrorMessage = string.Empty;
+    private bool shouldRefreshOnNextAppearance;
 
     public ObservableCollection<LevelListItem> Levels { get; } = [];
+
+    public string RefreshLevels
+    {
+        set => shouldRefreshOnNextAppearance = bool.TryParse(value, out var refreshLevels) && refreshLevels;
+    }
 
     public string LoadErrorMessage
     {
@@ -163,6 +170,13 @@ public sealed class LevelSelectionViewModel : BaseViewModel
             });
             IsBusy = false;
         }
+    }
+
+    public bool ConsumeRefreshRequest()
+    {
+        var shouldRefresh = shouldRefreshOnNextAppearance;
+        shouldRefreshOnNextAppearance = false;
+        return shouldRefresh;
     }
 
     private void ApplyLevels(IReadOnlyCollection<ReleasedLevelSummaryDto> releasedLevels)

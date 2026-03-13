@@ -105,6 +105,7 @@ The placement stack is the player's inventory of upcoming pipe sections. It is d
 - When a tile is placed, the remaining 9 items shift down by one position, and a new item is **appended to the top**.
 - New items are generated randomly from the available pipe types, subject to the level's `PipeInventoryRule` definitions. If a type has reached its `MaxCount`, it is excluded from the random pool until the level resets.
 - The first 10 items are pre-populated when the level loads, before the start delay countdown begins.
+- When a level finishes loading, the initial stack items animate in from above and settle into their slots with a gravity-like drop.
 
 ### Visual design
 
@@ -112,6 +113,7 @@ The placement stack is the player's inventory of upcoming pipe sections. It is d
 - The bottommost item (next to place) is highlighted with an amber glow or border.
 - The remaining 9 items are shown at reduced opacity to indicate they are queued but not yet active.
 - The stack slides down with a brief animation when an item is consumed.
+- The initial 10 generated items drop from the top of the sidebar toward their final positions with a bounce-eased settling motion.
 
 ### Placement interaction
 
@@ -130,13 +132,15 @@ The playfield grid occupies the **right portion of the gameplay screen** (approx
 
 - The grid is a collection of tappable cells matching the `BoardDimensions` of the loaded level.
 - Cells are rendered uniformly; fixed tiles replace empty cells at their defined `GridPosition`.
+- Each board cell is rendered as its own MAUI tile control inside the zoomable playfield viewport.
 - The grid renders cell borders to help players orient the board.
+- Every rendered playfield cell uses one of the shipped `empty_tile_background_{x}.png` images as a randomized background, chosen once per loaded board so the board texture feels varied without flickering during redraws.
 - The viewport clips the visible region while allowing the rendered playfield to exceed the viewport bounds.
 - On initial load, the gameplay page renders the released level's fixed tiles from the downloaded `LevelRevisionDto` before any pipe placement begins.
 
 ### Viewport behaviour
 
-- The playfield viewport supports pinch-to-zoom between **100% and 300%** scale.
+- The playfield viewport supports pinch-to-zoom, but tiles must never render above the native **128 × 128** pixel size of the playfield background art.
 - The default zoom is **100%**.
 - If the rendered board is wider or taller than the viewport, dragging pans horizontally and vertically across the board.
 - Pinch and drag gestures only change the viewport transform. They do not modify the board state, timer, or score.
@@ -201,12 +205,13 @@ Start and finish point tiles are fixed and rendered as part of the playfield gri
 ```
 
 - HUD height: fixed, minimal (~48 dp).
-- Stack width: fixed (~80–100 dp).
+- Stack width: fixed (~180–220 dp) so each upcoming pipe preview can show both its symbol and label.
 - Grid viewport: fills remaining space; the visible region is clipped while the rendered board may be larger than the viewport.
 
 ## Pre-start modal
 
 - When a released level finishes loading, gameplay pauses behind a modal card.
+- The loaded playfield, including empty tiles and the left-side pipe stack, must be visible before the modal appears so the player sees the full board presentation first.
 - The modal shows the level number, difficulty, flow timeout, and flow speed indicator from the downloaded level data.
 - A `Start` button at the bottom of the card dismisses the modal and begins the level's pre-flow countdown.
 - The board remains visible behind the modal so the player can preview the layout before starting.
@@ -238,12 +243,13 @@ When the start delay expires:
 - `FlowStarted` event arguments include `EntryDirection` and `GridPosition`.
 - `FlowCompleted` event arguments include `ExitDirection` and `GridPosition`.
 - The pipe placement stack shows exactly 10 items at all times.
+- The gameplay page animates the initial 10 stack items from top to bottom when a level loads.
 - Tapping an empty or unlocked cell on the playfield places the bottom stack item.
 - After placement, the stack shifts and a new item is appended at the top.
 - The start tile renders its `OutputDirection` as a visible directional indicator.
 - The finish tile renders its required `EntryDirection` as a visible directional indicator.
 - The layout allocates left sidebar for the stack and the remaining width for the playfield viewport.
-- The playfield viewport supports pinch-to-zoom from 100% to 300%.
+- Randomized playfield tile backgrounds remain stable for a loaded board and the tile zoom cap prevents tiles from exceeding 128 × 128 pixels.
 - When the rendered board exceeds the visible area, dragging pans across the playfield in both directions.
 - Code coverage for pipe control logic remains at or above 80%.
 

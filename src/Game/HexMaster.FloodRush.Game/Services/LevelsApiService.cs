@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using HexMaster.FloodRush.Game.Diagnostics;
 using HexMaster.FloodRush.Shared.Contracts.Levels;
 using Microsoft.Extensions.Logging;
@@ -44,13 +45,22 @@ public sealed class LevelsApiService : ILevelsApiService
             using var response = await client.GetAsync("api/levels/released", cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var releasedLevels = await response.Content.ReadFromJsonAsync<ReleasedLevelSummaryDto[]>(cancellationToken: cancellationToken)
+            var payload = await response.Content.ReadFromJsonAsync<ReleasedLevelsResponse>(cancellationToken: cancellationToken)
                 ?? throw new InvalidOperationException("The released levels endpoint returned an empty response.");
+
+            var releasedLevels = payload.Levels?.ToArray()
+                ?? throw new InvalidOperationException("The released levels endpoint did not include a levels collection.");
 
             activity?.SetTag("levels.count", releasedLevels.Length);
             activity?.SetStatus(ActivityStatusCode.Ok);
             logger.LogInformation("Fetched {Count} released levels from the FloodRush API.", releasedLevels.Length);
             return releasedLevels;
+        }
+        catch (JsonException exception)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            logger.LogWarning(exception, "Released levels payload could not be deserialized.");
+            throw new InvalidOperationException("The released levels response from the FloodRush API was invalid.", exception);
         }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException)
         {

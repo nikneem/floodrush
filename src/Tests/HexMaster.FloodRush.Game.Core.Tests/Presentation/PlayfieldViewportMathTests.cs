@@ -23,6 +23,22 @@ public sealed class PlayfieldViewportMathTests
     }
 
     [Fact]
+    public void CalculateMaxZoomForTileSize_ReturnsRatio_WhenTileCanZoomToNativeArtSize()
+    {
+        var zoom = PlayfieldViewportMath.CalculateMaxZoomForTileSize(120d, 128d);
+
+        Assert.Equal(1.0667d, zoom, 4);
+    }
+
+    [Fact]
+    public void CalculateMaxZoomForTileSize_DoesNotReturnLessThanMinZoom()
+    {
+        var zoom = PlayfieldViewportMath.CalculateMaxZoomForTileSize(160d, 128d);
+
+        Assert.Equal(PlayfieldViewportMath.DefaultMinZoom, zoom, 3);
+    }
+
+    [Fact]
     public void CalculateAnchoredScrollPosition_PreservesPinchAnchor_WhenZoomingIn()
     {
         var position = PlayfieldViewportMath.CalculateAnchoredScrollPosition(

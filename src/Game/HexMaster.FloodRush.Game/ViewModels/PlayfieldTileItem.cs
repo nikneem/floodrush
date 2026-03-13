@@ -13,5 +13,6 @@ public sealed record PlayfieldTileItem(
     int X,
     int Y,
     PlayfieldTileKind Kind,
+    string BackgroundImage,
     string Title,
     string Subtitle);

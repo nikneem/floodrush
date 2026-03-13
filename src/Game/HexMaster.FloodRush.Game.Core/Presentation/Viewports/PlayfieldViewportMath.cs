@@ -4,6 +4,7 @@ public static class PlayfieldViewportMath
 {
     public const double DefaultMinZoom = 1d;
     public const double DefaultMaxZoom = 3d;
+    public const double DefaultMaxTileRenderSize = 128d;
 
     public static double ClampZoom(double requestedZoom, double minZoom = DefaultMinZoom, double maxZoom = DefaultMaxZoom)
     {
@@ -27,6 +28,16 @@ public static class PlayfieldViewportMath
         }
 
         return baseLength * zoom;
+    }
+
+    public static double CalculateMaxZoomForTileSize(
+        double baseTileRenderSize,
+        double maxTileRenderSize = DefaultMaxTileRenderSize)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(baseTileRenderSize);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxTileRenderSize);
+
+        return Math.Max(DefaultMinZoom, maxTileRenderSize / baseTileRenderSize);
     }
 
     public static PlayfieldViewportScrollPosition CalculateAnchoredScrollPosition(

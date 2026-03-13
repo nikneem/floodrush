@@ -71,14 +71,14 @@ public sealed class WelcomeViewModel : BaseViewModel
             }
 
             logger.LogInformation("Opening level selection from the welcome screen.");
-            await navigation.NavigateToLevelSelectionAsync();
+            await navigation.NavigateToLevelSelectionAsync(refreshLevels: true);
         });
 
         LoadLevelCommand = new Command(async () =>
         {
             RecordUserAction("load-level");
             logger.LogInformation("Opening level selection from the welcome screen.");
-            await navigation.NavigateToLevelSelectionAsync();
+            await navigation.NavigateToLevelSelectionAsync(refreshLevels: true);
         });
 
         SettingsCommand = new Command(async () =>

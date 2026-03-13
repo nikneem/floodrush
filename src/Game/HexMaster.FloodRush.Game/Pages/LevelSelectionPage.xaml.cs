@@ -17,6 +17,12 @@ public partial class LevelSelectionPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+
+        if (!viewModel.ConsumeRefreshRequest())
+        {
+            return;
+        }
+
         loadLevelsCancellationTokenSource?.Cancel();
         loadLevelsCancellationTokenSource?.Dispose();
         loadLevelsCancellationTokenSource = new CancellationTokenSource();

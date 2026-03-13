@@ -1,7 +1,5 @@
 using System.Collections.Specialized;
 using HexMaster.FloodRush.Game.ViewModels;
-using Microsoft.Maui.Controls.Shapes;
-
 namespace HexMaster.FloodRush.Game.Controls;
 
 public sealed class PlayfieldBoardView : ContentView
@@ -126,6 +124,8 @@ public sealed class PlayfieldBoardView : ContentView
             RowSpacing = TileSpacing,
             ColumnSpacing = TileSpacing,
             Padding = new Thickness(24),
+            WidthRequest = CalculateBoardAxisLength(BoardWidth),
+            HeightRequest = CalculateBoardAxisLength(BoardHeight),
             HorizontalOptions = LayoutOptions.Start,
             VerticalOptions = LayoutOptions.Start
         };
@@ -146,117 +146,21 @@ public sealed class PlayfieldBoardView : ContentView
             {
                 var tile = tileLookup.TryGetValue((x, y), out var mappedTile)
                     ? mappedTile
-                    : new PlayfieldTileItem(x, y, PlayfieldTileKind.Empty, string.Empty, string.Empty);
+                    : new PlayfieldTileItem(x, y, PlayfieldTileKind.Empty, "empty_tile_background_01.png", string.Empty, string.Empty);
 
-                grid.Add(CreateTile(tile), x, y);
+                grid.Add(new PlayfieldTileView
+                {
+                    Tile = tile,
+                    TileSize = TileSize
+                }, x, y);
             }
         }
 
         Content = grid;
     }
 
-    private View CreateTile(PlayfieldTileItem tile)
-    {
-        var titleColorKey = tile.Kind == PlayfieldTileKind.Empty
-            ? "TextPrimary"
-            : tile.Kind == PlayfieldTileKind.FinishPoint
-                ? "TextOnPrimary"
-                : "TextOnSecondary";
-
-        var subtitleColorKey = tile.Kind == PlayfieldTileKind.Empty
-            ? "TextMuted"
-            : titleColorKey;
-
-        var tileContent = new Grid
-        {
-            RowDefinitions =
-            [
-                new RowDefinition { Height = GridLength.Auto },
-                new RowDefinition { Height = GridLength.Star }
-            ]
-        };
-
-        var titleLabel = new Label
-        {
-            Text = tile.Title,
-            FontFamily = "Peralta",
-            FontSize = 18,
-            TextColor = GetColor(titleColorKey),
-            HorizontalTextAlignment = TextAlignment.Center,
-            VerticalTextAlignment = TextAlignment.Center,
-            LineBreakMode = LineBreakMode.WordWrap
-        };
-
-        var subtitleLabel = new Label
-        {
-            Text = tile.Subtitle,
-            FontFamily = "PatrickHand",
-            FontSize = 14,
-            TextColor = GetColor(subtitleColorKey),
-            HorizontalTextAlignment = TextAlignment.Center,
-            VerticalTextAlignment = TextAlignment.Center,
-            LineBreakMode = LineBreakMode.WordWrap
-        };
-
-        Grid.SetRow(subtitleLabel, 1);
-        tileContent.Children.Add(titleLabel);
-        tileContent.Children.Add(subtitleLabel);
-
-        return new Border
-        {
-            WidthRequest = TileSize,
-            HeightRequest = TileSize,
-            Padding = new Thickness(8),
-            Background = GetTileBackground(tile.Kind),
-            Stroke = GetTileStroke(tile.Kind),
-            StrokeThickness = 1,
-            StrokeShape = new RoundRectangle
-            {
-                CornerRadius = new CornerRadius(12)
-            },
-            Content = tileContent
-        };
-    }
-
-    private static Brush GetTileBackground(PlayfieldTileKind kind) =>
-        kind switch
-        {
-            PlayfieldTileKind.StartPoint => new SolidColorBrush(GetColor("Success")),
-            PlayfieldTileKind.FinishPoint => new SolidColorBrush(GetColor("BrandAmber")),
-            PlayfieldTileKind.FluidBasin => new SolidColorBrush(GetColor("Info")),
-            PlayfieldTileKind.SplitSection => new SolidColorBrush(GetColor("Warning")),
-            _ => GetBrush("CardBackgroundBrush")
-        };
-
-    private static Brush GetTileStroke(PlayfieldTileKind kind) =>
-        kind switch
-        {
-            PlayfieldTileKind.StartPoint or
-            PlayfieldTileKind.FinishPoint or
-            PlayfieldTileKind.FluidBasin or
-            PlayfieldTileKind.SplitSection => new SolidColorBrush(GetColor("White")),
-            _ => new SolidColorBrush(GetColor("TextMuted"))
-        };
-
-    private static Brush GetBrush(string key)
-    {
-        if (Application.Current?.Resources.TryGetValue(key, out var value) == true &&
-            value is Brush brush)
-        {
-            return brush;
-        }
-
-        throw new InvalidOperationException($"Resource '{key}' was not found.");
-    }
-
-    private static Color GetColor(string key)
-    {
-        if (Application.Current?.Resources.TryGetValue(key, out var value) == true &&
-            value is Color color)
-        {
-            return color;
-        }
-
-        throw new InvalidOperationException($"Resource '{key}' was not found.");
-    }
+    private double CalculateBoardAxisLength(int cellCount) =>
+        (Math.Max(0, cellCount) * TileSize) +
+        (Math.Max(0, cellCount - 1) * TileSpacing) +
+        48d;
 }

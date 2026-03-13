@@ -51,22 +51,102 @@
 
         <!-- Game board area -->
         <Grid Grid.Row="1">
-            <controls:ZoomablePlayfieldViewport Margin="16"
-                                                IsVisible="{Binding HasLevelLoaded}"
-                                                ContentWidth="{Binding BoardPixelWidth}"
-                                                ContentHeight="{Binding BoardPixelHeight}"
-                                                MinZoom="1"
-                                                MaxZoom="3">
-                <controls:ZoomablePlayfieldViewport.PlayfieldContent>
-                    <Grid Background="{StaticResource AppBackgroundGradientBrush}">
+            <Grid ColumnDefinitions="220,*"
+                  ColumnSpacing="8">
+                <Border Grid.Column="0"
+                        Margin="16,16,8,16"
+                        Padding="14"
+                        Background="{StaticResource SurfaceBackgroundBrush}"
+                        Stroke="{StaticResource CardBackgroundBrush}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16">
+                    <Grid RowDefinitions="Auto,Auto,*"
+                          RowSpacing="12">
+                        <Label Grid.Row="0"
+                               Text="Pipe stack"
+                               Style="{StaticResource SectionHeadingStyle}"
+                               HorizontalTextAlignment="Center"/>
+
+                        <Label Grid.Row="1"
+                               Text="The bottom tile places next."
+                               Style="{StaticResource MutedTextStyle}"
+                               HorizontalTextAlignment="Center"/>
+
+                        <VerticalStackLayout x:Name="PipeStackContainer"
+                                             Grid.Row="2"
+                                             BindableLayout.ItemsSource="{Binding UpcomingPipes}"
+                                             Spacing="10"
+                                             VerticalOptions="End">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PipeStackItem">
+                                    <Border Padding="10"
+                                            Background="{StaticResource SurfaceBackgroundBrush}"
+                                            Stroke="{StaticResource CardBackgroundBrush}"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 14"
+                                            Opacity="{Binding PreviewOpacity}">
+                                        <Grid ColumnDefinitions="64,*"
+                                              ColumnSpacing="10"
+                                              MinimumHeightRequest="76">
+                                            <Border Background="{StaticResource AppBackgroundGradientBrush}"
+                                                    Stroke="{StaticResource SecondaryBrush}"
+                                                    StrokeThickness="1"
+                                                    StrokeShape="RoundRectangle 12">
+                                                <Label Text="{Binding Glyph}"
+                                                       HorizontalOptions="Center"
+                                                       VerticalOptions="Center"
+                                                       HorizontalTextAlignment="Center"
+                                                       VerticalTextAlignment="Center"
+                                                       FontSize="30"
+                                                       TextColor="{StaticResource BrandAmber}"/>
+                                            </Border>
+
+                                            <VerticalStackLayout Grid.Column="1"
+                                                                 Spacing="2"
+                                                                 VerticalOptions="Center">
+                                                <Label Text="{Binding Label}"
+                                                       Style="{StaticResource BodyTextStyle}"
+                                                       FontAttributes="Bold"/>
+                                                <Label Text="{Binding QueueLabel}"
+                                                       Style="{StaticResource MutedTextStyle}"/>
+                                            </VerticalStackLayout>
+                                        </Grid>
+
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border"
+                                                         Binding="{Binding IsNextToPlace}"
+                                                         Value="True">
+                                                <Setter Property="Background"
+                                                        Value="{StaticResource CardGradientBrush}"/>
+                                                <Setter Property="Stroke"
+                                                        Value="{StaticResource PrimaryBrush}"/>
+                                                <Setter Property="StrokeThickness"
+                                                        Value="2"/>
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <controls:ZoomablePlayfieldViewport Grid.Column="1"
+                                                    Margin="8,16,16,16"
+                                                    IsVisible="{Binding HasLevelLoaded}"
+                                                    ContentWidth="{Binding BoardPixelWidth}"
+                                                    ContentHeight="{Binding BoardPixelHeight}"
+                                                    MinZoom="1"
+                                                    MaxZoom="{Binding MaxTileZoom}">
+                    <controls:ZoomablePlayfieldViewport.PlayfieldContent>
                         <controls:PlayfieldBoardView BoardWidth="{Binding BoardWidth}"
                                                      BoardHeight="{Binding BoardHeight}"
                                                      Tiles="{Binding BoardTiles}"
                                                      TileSize="{Binding TileRenderSize}"
                                                      TileSpacing="{Binding TileSpacing}" />
-                    </Grid>
-                </controls:ZoomablePlayfieldViewport.PlayfieldContent>
-            </controls:ZoomablePlayfieldViewport>
+                    </controls:ZoomablePlayfieldViewport.PlayfieldContent>
+                </controls:ZoomablePlayfieldViewport>
+            </Grid>
 
             <Grid IsVisible="{Binding IsBusy}"
                   BackgroundColor="{StaticResource AppBackground}"

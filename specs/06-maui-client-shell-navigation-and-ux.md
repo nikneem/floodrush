@@ -53,7 +53,7 @@ The active gameplay screen uses a fixed three-zone landscape layout:
 - Tapping a cell with an existing (unlocked) pipe **replaces** it.
 - Locked cells (flow has reached them) and fixed tiles cannot be tapped.
 - The bottom stack item is consumed immediately; there is no drag-and-drop.
-- The playfield viewport supports pinch-to-zoom from 100% to 300%.
+- The playfield viewport supports pinch-to-zoom, but individual tiles must not exceed the native 128 × 128 pixel playfield background art size.
 - When the rendered playfield is larger than the visible viewport, dragging pans the viewport across the board in both directions.
 - Zooming and panning must preserve the three-zone landscape layout; the player does not leave the gameplay screen to inspect the rest of the board.
 
