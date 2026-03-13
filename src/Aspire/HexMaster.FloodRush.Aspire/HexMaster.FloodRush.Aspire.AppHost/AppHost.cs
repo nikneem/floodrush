@@ -9,6 +9,7 @@ var tables = builder.AddAzureStorage("floodrushstorage")
 var api = builder.AddProject<Projects.HexMaster_FloodRush_Api>("hexmaster-floodrush-api")
     .WithReference(tables)
     .WaitFor(tables)
+    .WithSeedBasicLevelsCommand()
     .WithOtlpExporter();
 
 builder.AddExecutable(

@@ -3,9 +3,11 @@ using HexMaster.FloodRush.Server.Abstractions.Features;
 using HexMaster.FloodRush.Server.Abstractions.Security;
 using HexMaster.FloodRush.Server.Levels.Features.GetLevelRevision;
 using HexMaster.FloodRush.Server.Levels.Features.GetReleasedLevels;
+using HexMaster.FloodRush.Server.Levels.Features.SeedBasicLevels;
 using HexMaster.FloodRush.Shared.Contracts.Levels;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Routing;
 
 namespace HexMaster.FloodRush.Server.Levels;
@@ -45,6 +47,22 @@ public static class LevelsModuleEndpointRouteBuilderExtensions
         })
         .RequireAuthorization()
         .WithName("Levels_GetRevision");
+
+        group.MapPost("/dev/seed-basic-levels", async (
+            IHostEnvironment environment,
+            ICommandHandler<SeedBasicLevelsCommand, SeedBasicLevelsResponse> handler,
+            CancellationToken cancellationToken) =>
+        {
+            if (!environment.IsDevelopment())
+            {
+                return Results.NotFound();
+            }
+
+            var response = await handler.HandleAsync(new SeedBasicLevelsCommand(), cancellationToken);
+            return Results.Ok(response);
+        })
+        .AllowAnonymous()
+        .WithName("Levels_SeedBasicLevels");
 
         return endpoints;
     }

@@ -38,6 +38,10 @@ The server is a modular monolith.
 - In development, the API host exposes Scalar on `/scalar` using the generated OpenAPI document.
 - Launching the API project directly opens the browser to Scalar by default so the contract surface is easy to inspect while building the client and server together.
 
+## Aspire developer workflows
+- The API resource can expose local-only Aspire dashboard commands for developer operations.
+- FloodRush uses this for sample level seeding so connected local runs can populate additional easy released levels without editing storage by hand.
+
 ## Observability
 - The API keeps its OpenTelemetry baseline in the shared Aspire service-defaults project.
 - The MAUI client configures OpenTelemetry centrally in `MauiProgram.cs`.

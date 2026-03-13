@@ -33,6 +33,7 @@ At minimum, settings should support:
 - The Aspire AppHost should be the default local developer entry point for connected scenarios.
 - On supported desktop development environments, starting the AppHost should launch both the API and the MAUI client so client and server work can be exercised together.
 - Local orchestration must not become a hard runtime dependency for the offline-first client; the MAUI app must still be able to run independently when needed.
+- The Aspire dashboard may expose local-only custom commands for operational developer workflows such as seeding sample released levels into development storage.
 
 ## Acceptance criteria
 - The repository has a clear path from core rules to client UX and online sync.

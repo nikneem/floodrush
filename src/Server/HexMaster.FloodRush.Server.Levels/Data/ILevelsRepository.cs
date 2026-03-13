@@ -13,4 +13,6 @@ internal interface ILevelsRepository
         string levelId,
         string revision,
         CancellationToken cancellationToken);
+
+    ValueTask<int> SeedBasicLevelsAsync(CancellationToken cancellationToken);
 }
