@@ -52,6 +52,7 @@ else
     // dev tunnel is needed. OTLP traffic from the Windows process also reaches
     // the Aspire dashboard directly via localhost.
     mauiApp.AddWindowsDevice()
+        .WithOtlpExporter()
         .WithReference(api);
 }
 

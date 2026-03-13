@@ -103,7 +103,10 @@ public static class MauiProgram
                     .AddRuntimeInstrumentation();
             });
 
-        if (TelemetryExportDecisions.ShouldEnableOtlpExport(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+        var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]
+            ?? Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+
+        if (TelemetryExportDecisions.ShouldEnableOtlpExport(otlpEndpoint))
         {
             openTelemetry.UseOtlpExporter();
         }
