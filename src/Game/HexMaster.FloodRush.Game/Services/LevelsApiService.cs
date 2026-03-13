@@ -113,6 +113,13 @@ public sealed class LevelsApiService : ILevelsApiService
             logger.LogInformation("Fetched level revision {LevelId}/{Revision}.", levelId, revision);
             return levelRevision;
         }
+        catch (JsonException exception)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            logger.LogWarning(exception, "Level revision {LevelId}/{Revision} payload could not be deserialized.", levelId, revision);
+            throw new InvalidOperationException(
+                $"The level revision '{levelId}/{revision}' response from the FloodRush API was invalid.", exception);
+        }
         catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException)
         {
             activity?.SetStatus(ActivityStatusCode.Error, exception.Message);

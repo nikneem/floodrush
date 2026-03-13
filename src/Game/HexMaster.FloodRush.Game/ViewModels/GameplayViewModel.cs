@@ -419,6 +419,12 @@ public sealed class GameplayViewModel : BaseViewModel
             activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
             logger.LogWarning(exception, "Loading level {LevelId} failed because the level data was unavailable or invalid.", LevelId);
         }
+        catch (Exception exception)
+        {
+            LoadErrorMessage = "An unexpected error occurred while loading this level.";
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            logger.LogError(exception, "Unexpected error loading level {LevelId}.", LevelId);
+        }
         finally
         {
             FloodRushTelemetry.OperationDurationMs.Record(stopwatch.Elapsed.TotalMilliseconds, new TagList
@@ -626,7 +632,7 @@ public sealed class GameplayViewModel : BaseViewModel
 
     private static IReadOnlyCollection<PlayfieldTileItem> BuildTiles(LevelRevisionDto levelRevision)
     {
-        var fixedTileLookup = levelRevision.FixedTiles.ToDictionary(tile => (tile.X, tile.Y));
+        var fixedTileLookup = (levelRevision.FixedTiles ?? []).ToDictionary(tile => (tile.X, tile.Y));
         var tiles = new List<PlayfieldTileItem>(levelRevision.BoardWidth * levelRevision.BoardHeight);
         var random = new Random(HashCode.Combine(levelRevision.LevelId, levelRevision.Revision));
 
