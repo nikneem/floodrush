@@ -62,6 +62,13 @@ The `docs\` folder contains the higher-level product framing. Read `docs\product
 - Keep HTTP endpoints thin in the API host and push behavior into module feature handlers.
 - Use Azure Table Storage as the server persistence default and wire local storage dependencies through Aspire.
 
+## Observability expectations
+- Treat logging, tracing, and metrics as first-class behavior for both the server and the MAUI client.
+- Server projects should keep using the shared Aspire service-defaults OpenTelemetry configuration rather than duplicating exporter setup in each module.
+- The MAUI client should configure OpenTelemetry centrally in `MauiProgram.cs`, use a shared app `ActivitySource` and `Meter`, and emit telemetry for navigation, auth, level loading, caching, quit flow, and settings changes.
+- Prefer structured `ILogger` messages with stable property names so the Aspire dashboard can filter and correlate client and server events.
+- AppHost resources that should show up in the Aspire dashboard must opt in with `WithOtlpExporter()`, including executable resources such as the MAUI client.
+
 ## Documentation expectations
 - Keep `docs\` in sync with the numbered specs when product framing changes.
 - If implementation changes the intended behavior, update the matching file in `specs\`.

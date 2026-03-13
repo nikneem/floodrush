@@ -54,6 +54,7 @@ Define the minimum server capabilities and API surface needed by the client.
 - Prefer additive contract evolution for future compatibility.
 - Device JWTs must include the device identifier as a claim that downstream endpoints can trust after signature validation.
 - Module endpoints should stay thin and delegate behavior to feature handlers.
+- In development, the API should expose a Scalar API reference over the generated OpenAPI document so contributors can inspect and exercise the contract quickly.
 
 ## Server-side validation
 - Reject malformed device identifiers.
@@ -65,3 +66,4 @@ Define the minimum server capabilities and API surface needed by the client.
 ## Acceptance criteria
 - The client can obtain a JWT using its device identifier and then perform authenticated profile creation, released-level sync, level download, score upload, and settings sync using stable contracts.
 - The server codebase is organized by module and feature slice rather than by technical layer alone.
+- Running the API project directly in development opens the browser to the Scalar endpoint by default.

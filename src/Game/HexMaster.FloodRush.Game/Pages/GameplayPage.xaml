@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:HexMaster.FloodRush.Game.Controls"
              xmlns:vm="clr-namespace:HexMaster.FloodRush.Game.ViewModels"
              xmlns:views="clr-namespace:HexMaster.FloodRush.Game.Views"
              x:Class="HexMaster.FloodRush.Game.Pages.GameplayPage"
@@ -14,9 +15,9 @@
         <Border Grid.Row="0"
                 Background="{StaticResource SurfaceBackgroundBrush}"
                 Padding="16,8">
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                <Label Grid.Column="0"
-                       Text="{Binding LevelId, StringFormat='Level: {0}'}"
+             <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                 <Label Grid.Column="0"
+                       Text="{Binding LevelDisplayName}"
                        Style="{StaticResource SectionHeadingStyle}"
                        FontSize="16"
                        VerticalOptions="Center"/>
@@ -30,13 +31,13 @@
                            FontSize="14"/>
                 </StackLayout>
 
-                <StackLayout Grid.Column="2" Orientation="Horizontal" Spacing="4"
-                             VerticalOptions="Center" Margin="0,0,24,0">
-                    <Label Text="Score: " Style="{StaticResource MutedTextStyle}" FontSize="14"/>
-                    <Label Text="{Binding Score}"
-                           TextColor="{StaticResource BrandAmber}"
-                           FontAttributes="Bold"
-                           FontSize="14"/>
+                 <StackLayout Grid.Column="2" Orientation="Horizontal" Spacing="4"
+                              VerticalOptions="Center" Margin="0,0,24,0">
+                    <Label Text="Flow speed: " Style="{StaticResource MutedTextStyle}" FontSize="14"/>
+                    <Label Text="{Binding FlowSpeedIndicator}"
+                            TextColor="{StaticResource BrandAmber}"
+                            FontAttributes="Bold"
+                            FontSize="14"/>
                 </StackLayout>
 
                 <Button Grid.Column="3"
@@ -48,20 +49,56 @@
             </Grid>
         </Border>
 
-        <!-- Game board area (placeholder) -->
+        <!-- Game board area -->
         <Grid Grid.Row="1">
-            <Border Background="{StaticResource CardBackgroundBrush}"
-                    Margin="16"
-                    StrokeShape="RoundRectangle 8">
-                <Border.Stroke>
-                    <SolidColorBrush Color="{StaticResource SecondaryLight}"/>
-                </Border.Stroke>
-                <Label Text="Game Board"
-                       Style="{StaticResource MutedTextStyle}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center"
-                       FontSize="20"/>
-            </Border>
+            <controls:ZoomablePlayfieldViewport Margin="16"
+                                                IsVisible="{Binding HasLevelLoaded}"
+                                                ContentWidth="{Binding BoardPixelWidth}"
+                                                ContentHeight="{Binding BoardPixelHeight}"
+                                                MinZoom="1"
+                                                MaxZoom="3">
+                <controls:ZoomablePlayfieldViewport.PlayfieldContent>
+                    <Grid Background="{StaticResource AppBackgroundGradientBrush}">
+                        <controls:PlayfieldBoardView BoardWidth="{Binding BoardWidth}"
+                                                     BoardHeight="{Binding BoardHeight}"
+                                                     Tiles="{Binding BoardTiles}"
+                                                     TileSize="{Binding TileRenderSize}"
+                                                     TileSpacing="{Binding TileSpacing}" />
+                    </Grid>
+                </controls:ZoomablePlayfieldViewport.PlayfieldContent>
+            </controls:ZoomablePlayfieldViewport>
+
+            <Grid IsVisible="{Binding IsBusy}"
+                  BackgroundColor="{StaticResource AppBackground}"
+                  Opacity="0.88">
+                <VerticalStackLayout Spacing="12"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center">
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       Color="{StaticResource BrandAmber}"
+                                       WidthRequest="56"
+                                       HeightRequest="56"/>
+                    <Label Text="Loading level from the server..."
+                           Style="{StaticResource BodyTextStyle}"
+                           HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <Grid IsVisible="{Binding HasLoadError}">
+                <Border Style="{StaticResource GameCardStyle}"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        MaximumWidthRequest="560">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Level load failed"
+                               Style="{StaticResource SectionHeadingStyle}"
+                               HorizontalTextAlignment="Center"/>
+                        <Label Text="{Binding LoadErrorMessage}"
+                               Style="{StaticResource BodyTextStyle}"
+                               HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
 
             <!-- Pause overlay -->
             <views:PauseResultOverlay
@@ -71,6 +108,61 @@
             <views:PauseResultOverlay
                 BindingContext="{Binding}"
                 IsVisible="{Binding IsGameOver}"/>
+
+            <Grid IsVisible="{Binding IsPreStartModalVisible}">
+                <BoxView Color="{StaticResource AppBackground}"
+                         Opacity="0.82"/>
+
+                <Border Style="{StaticResource GameCardStyle}"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        MaximumWidthRequest="520">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                          RowSpacing="16">
+                        <VerticalStackLayout Grid.Row="0"
+                                             Spacing="6">
+                            <Label Text="{Binding LevelNumberLabel}"
+                                   Style="{StaticResource PageTitleStyle}"
+                                   HorizontalTextAlignment="Center"/>
+                            <Label Text="{Binding DisplayName}"
+                                   Style="{StaticResource PageSubtitleStyle}"
+                                   HorizontalTextAlignment="Center"/>
+                        </VerticalStackLayout>
+
+                        <Grid Grid.Row="1"
+                              ColumnDefinitions="*,Auto">
+                            <Label Text="Difficulty"
+                                   Style="{StaticResource BodyTextStyle}"/>
+                            <Label Grid.Column="1"
+                                   Text="{Binding Difficulty}"
+                                   Style="{StaticResource HudValueStyle}"/>
+                        </Grid>
+
+                        <Grid Grid.Row="2"
+                              ColumnDefinitions="*,Auto">
+                            <Label Text="Flow timeout"
+                                   Style="{StaticResource BodyTextStyle}"/>
+                            <Label Grid.Column="1"
+                                   Text="{Binding FlowTimeoutLabel}"
+                                   Style="{StaticResource HudValueStyle}"/>
+                        </Grid>
+
+                        <Grid Grid.Row="3"
+                              ColumnDefinitions="*,Auto">
+                            <Label Text="Flow speed"
+                                   Style="{StaticResource BodyTextStyle}"/>
+                            <Label Grid.Column="1"
+                                   Text="{Binding FlowSpeedIndicator}"
+                                   Style="{StaticResource HudValueStyle}"/>
+                        </Grid>
+
+                        <Button Grid.Row="4"
+                                Text="Start"
+                                Command="{Binding StartLevelCommand}"
+                                HorizontalOptions="Fill"/>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
     </Grid>
 </ContentPage>

@@ -65,6 +65,13 @@ Read `docs\product-vision-and-scope.md` for the plain-language product framing a
 - Keep server-only shared code in `src\Server`; keep only client/server shared contracts in `src\Shared`.
 - Use Azure Table Storage for server persistence and orchestrate local development storage through Aspire.
 
+## Observability expectations
+- Both the server and the MAUI client must emit structured logs through `ILogger` and OpenTelemetry so local connected runs can be inspected in the Aspire dashboard.
+- Keep server observability wired through `src\Aspire\HexMaster.FloodRush.Aspire\HexMaster.FloodRush.Aspire.ServiceDefaults`; do not add one-off telemetry configuration in individual server modules unless a spec requires it.
+- Keep MAUI OpenTelemetry wiring centralised in `MauiProgram.cs`, and add app-specific spans/metrics through the shared game telemetry source instead of ad hoc telemetry objects.
+- Instrument important player and sync flows explicitly: navigation, device login, released-level refresh, cache fallback, gameplay level loading, quit confirmation, and settings changes.
+- When a resource is started from the AppHost and should appear in the Aspire dashboard, ensure the AppHost resource uses `WithOtlpExporter()`.
+
 ## Coding guidance
 - Reuse shared domain types instead of duplicating board or scoring rules.
 - Keep flow simulation deterministic and testable without UI dependencies.

@@ -65,13 +65,18 @@
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
-	</ItemGroup>
+ 	<ItemGroup>
+ 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+ 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
+ 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\HexMaster.FloodRush.Game.Core\HexMaster.FloodRush.Game.Core.csproj" />
+		<ProjectReference Include="..\..\Shared\HexMaster.FloodRush.Shared.Contracts\HexMaster.FloodRush.Shared.Contracts.csproj" />
 	</ItemGroup>
 
 </Project>

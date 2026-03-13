@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HexMaster.FloodRush.Server.Abstractions\HexMaster.FloodRush.Server.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Game\HexMaster.FloodRush.Game.Core\HexMaster.FloodRush.Game.Core.csproj" />
     <ProjectReference Include="..\..\Shared\HexMaster.FloodRush.Shared.Contracts\HexMaster.FloodRush.Shared.Contracts.csproj" />
   </ItemGroup>
 

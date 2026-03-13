@@ -3,15 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:HexMaster.FloodRush.Game.ViewModels"
              x:Class="HexMaster.FloodRush.Game.Pages.LevelSelectionPage"
-             Shell.NavBarIsVisible="False">
-    <ContentPage.Background>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#0d1b2a" Offset="0"/>
-            <GradientStop Color="#102035" Offset="1"/>
-        </LinearGradientBrush>
-    </ContentPage.Background>
+             Shell.NavBarIsVisible="False"
+             Background="{StaticResource AppBackgroundGradientBrush}">
 
-    <Grid RowDefinitions="Auto,*" Padding="24,16">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="24,16" RowSpacing="12">
         <!-- Header -->
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16">
             <Button Grid.Column="0"
@@ -34,37 +29,64 @@
                    Margin="0,0,8,0"/>
         </Grid>
 
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" IsVisible="{Binding HasLoadError}">
+            <Label Text="{Binding LoadErrorMessage}"
+                   Style="{StaticResource BodyTextStyle}"
+                   TextColor="{StaticResource Danger}"/>
+        </Grid>
+
         <!-- Level list -->
-        <CollectionView Grid.Row="1"
-                        ItemsSource="{Binding Levels}"
-                        SelectionMode="Single">
-            <CollectionView.ItemsLayout>
-                <GridItemsLayout Orientation="Vertical" Span="3" HorizontalItemSpacing="12" VerticalItemSpacing="12"/>
-            </CollectionView.ItemsLayout>
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="vm:LevelListItem">
-                    <Border Style="{StaticResource GameCardStyle}">
-                        <Grid RowDefinitions="*,Auto,Auto" RowSpacing="8">
-                            <Label Grid.Row="0"
-                                   Text="{Binding DisplayName}"
-                                   Style="{StaticResource SectionHeadingStyle}"
-                                   FontSize="16"
-                                   HorizontalOptions="Start"/>
-                            <Label Grid.Row="1"
-                                   Text="{Binding Difficulty}"
-                                   Style="{StaticResource MutedTextStyle}"/>
-                            <Button Grid.Row="2"
-                                    Text="Play"
-                                    Style="{StaticResource PrimaryButtonStyle}"
-                                    Padding="16,8"
-                                    FontSize="13"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectLevelCommand}"
-                                    CommandParameter="{Binding .}"
-                                    HorizontalOptions="Fill"/>
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+        <Grid Grid.Row="2">
+            <CollectionView ItemsSource="{Binding Levels}"
+                            SelectionMode="Single"
+                            EmptyView="No released levels are available yet.">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical" Span="3" HorizontalItemSpacing="12" VerticalItemSpacing="12"/>
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LevelListItem">
+                        <Border Style="{StaticResource GameCardStyle}">
+                            <Grid RowDefinitions="*,Auto,Auto,Auto" RowSpacing="8">
+                                <Label Grid.Row="0"
+                                       Text="{Binding DisplayName}"
+                                       Style="{StaticResource SectionHeadingStyle}"
+                                       FontSize="16"
+                                       HorizontalOptions="Start"/>
+                                <Label Grid.Row="1"
+                                       Text="{Binding Difficulty}"
+                                       Style="{StaticResource MutedTextStyle}"/>
+                                <Label Grid.Row="2"
+                                       Text="{Binding FlowSpeedIndicator, StringFormat='Flow speed: {0}'}"
+                                       Style="{StaticResource BodyTextStyle}"/>
+                                <Button Grid.Row="3"
+                                        Text="Play"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        Padding="16,8"
+                                        FontSize="13"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectLevelCommand}"
+                                        CommandParameter="{Binding .}"
+                                        HorizontalOptions="Fill"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Grid IsVisible="{Binding IsBusy}"
+                  BackgroundColor="{StaticResource AppBackground}"
+                  Opacity="0.85">
+                <VerticalStackLayout Spacing="12"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center">
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       Color="{StaticResource BrandAmber}"
+                                       WidthRequest="48"
+                                       HeightRequest="48"/>
+                    <Label Text="Loading released levels..."
+                           Style="{StaticResource BodyTextStyle}"
+                           HorizontalTextAlignment="Center"/>
+                </VerticalStackLayout>
+            </Grid>
+        </Grid>
     </Grid>
 </ContentPage>

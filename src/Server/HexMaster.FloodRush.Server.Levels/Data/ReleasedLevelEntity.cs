@@ -16,6 +16,8 @@ internal sealed class ReleasedLevelEntity : ITableEntity
 
     public string DisplayName { get; set; } = string.Empty;
 
+    public string Difficulty { get; set; } = "Medium";
+
     public int FlowSpeedIndicator { get; set; }
 
     public DateTimeOffset ReleasedAtUtc { get; set; }
@@ -25,5 +27,11 @@ internal sealed class ReleasedLevelEntity : ITableEntity
     public ETag ETag { get; set; }
 
     public ReleasedLevelSummaryDto ToDto() =>
-        new(RowKey, Revision, DisplayName, FlowSpeedIndicator, ReleasedAtUtc);
+        new(
+            RowKey,
+            Revision,
+            DisplayName,
+            string.IsNullOrWhiteSpace(Difficulty) ? "Medium" : Difficulty,
+            FlowSpeedIndicator,
+            ReleasedAtUtc);
 }

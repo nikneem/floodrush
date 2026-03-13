@@ -13,9 +13,9 @@ The gameplay screen is divided into three horizontal zones:
 │  HUD: level name │ score │ speed indicator │ countdown timer │
 ├────────────┬─────────────────────────────────────────────────┤
 │            │                                                  │
-│  PIPE      │               PLAYFIELD GRID                    │
+│  PIPE      │            PLAYFIELD VIEWPORT                   │
 │  STACK     │                                                  │
-│  (10 items)│   fixed tiles  +  player-placed pipes           │
+│  (10 items)│  zoomable, scrollable playfield grid            │
 │            │                                                  │
 │  ↑ queued  │                                                  │
 │            │                                                  │
@@ -26,7 +26,7 @@ The gameplay screen is divided into three horizontal zones:
 
 - **HUD strip** — fixed height (~48 dp): level name, current score, flow speed indicator, and the pre-flow countdown.
 - **Pipe stack sidebar** — fixed width (~80–100 dp): 10 upcoming pipe sections, stacked vertically.
-- **Playfield grid** — fills remaining space: the level board with all tiles.
+- **Playfield viewport** — fills remaining space: a clipped viewport that hosts the level board and can pan around oversized layouts.
 
 ---
 
@@ -133,6 +133,14 @@ public class FlowCompletedEventArgs : EventArgs
 
 The grid renders the full level board. Each cell maps to a `GridPosition`.
 
+### Viewport interaction
+
+- The board may be larger than the visible gameplay area.
+- Players can pinch to zoom the playfield between **100% and 300%**.
+- Players can drag to pan across the board whenever the current zoom level or board size causes overflow in either direction.
+- Zoom and pan only change what part of the board is visible; they do not affect scoring, timing, or placement rules.
+- The first playable slice renders the downloaded released-level board immediately so the player can inspect the fixed tiles before starting.
+
 ### Cell states
 
 | State | Tappable | Content |
@@ -151,6 +159,23 @@ The grid renders the full level board. Each cell maps to a `GridPosition`.
 3. A pipe control of that type is instantiated with `EntryDirection` / `ExitDirection` calculated from the pipe's geometry and the cell position.
 4. The pipe control is placed into the grid cell.
 5. The stack shifts; a new item is generated and appended to the top.
+
+### Gesture rules
+
+- **Single tap** — place or replace the next pipe, subject to the normal lock and fixed-tile rules.
+- **Two-finger pinch** — zoom the playfield viewport in or out.
+- **Drag** — scroll the viewport horizontally or vertically across the playfield when the content exceeds the visible bounds.
+
+## Pre-start modal
+
+When gameplay loads a released level from the server, the board stays visible and a centered summary card appears above it. The card shows:
+
+- Level number
+- Difficulty
+- Flow timeout
+- Flow speed indicator
+
+The card's bottom-aligned **Start** button dismisses the preview and begins the countdown.
 
 ---
 

@@ -9,9 +9,13 @@ internal sealed class TableLevelsRepository : ILevelsRepository
 {
     private const string TableName = "levels";
     private readonly TableClient tableClient;
+    private readonly BuiltInLevelsCatalog builtInLevelsCatalog;
 
-    public TableLevelsRepository(IConfiguration configuration)
+    public TableLevelsRepository(
+        IConfiguration configuration,
+        BuiltInLevelsCatalog builtInLevelsCatalog)
     {
+        this.builtInLevelsCatalog = builtInLevelsCatalog;
         var connectionString = configuration.GetConnectionString(StorageResourceNames.Tables)
             ?? throw new InvalidOperationException(
                 $"Connection string '{StorageResourceNames.Tables}' is required for the levels module.");
@@ -25,7 +29,7 @@ internal sealed class TableLevelsRepository : ILevelsRepository
     {
         await tableClient.CreateIfNotExistsAsync(cancellationToken);
 
-        var levels = new List<ReleasedLevelSummaryDto>();
+        var levels = new List<ReleasedLevelSummaryDto>(builtInLevelsCatalog.GetReleasedLevels());
         var query = tableClient.QueryAsync<ReleasedLevelEntity>(
             entity => entity.PartitionKey == ReleasedLevelEntity.PartitionValue,
             cancellationToken: cancellationToken);
@@ -36,8 +40,16 @@ internal sealed class TableLevelsRepository : ILevelsRepository
         }
 
         return levels
+            .DistinctBy(level => (level.LevelId, level.Revision))
             .OrderByDescending(level => level.ReleasedAtUtc)
             .ThenBy(level => level.DisplayName, StringComparer.Ordinal)
             .ToArray();
     }
+
+    public ValueTask<LevelRevisionDto?> GetLevelRevisionAsync(
+        string profileId,
+        string levelId,
+        string revision,
+        CancellationToken cancellationToken) =>
+        ValueTask.FromResult(builtInLevelsCatalog.GetLevelRevision(levelId, revision));
 }

@@ -124,13 +124,23 @@ The placement stack is the player's inventory of upcoming pipe sections. It is d
 
 ## Playfield grid
 
-The playfield grid occupies the **right portion of the gameplay screen** (approximately 80% width in landscape). The remaining 20% on the left holds the pipe stack.
+The playfield grid occupies the **right portion of the gameplay screen** (approximately 80% width in landscape). The remaining 20% on the left holds the pipe stack. The rendered board lives inside a viewport so the full playfield can extend beyond the immediately visible gameplay area.
 
 ### Grid composition
 
 - The grid is a collection of tappable cells matching the `BoardDimensions` of the loaded level.
 - Cells are rendered uniformly; fixed tiles replace empty cells at their defined `GridPosition`.
 - The grid renders cell borders to help players orient the board.
+- The viewport clips the visible region while allowing the rendered playfield to exceed the viewport bounds.
+- On initial load, the gameplay page renders the released level's fixed tiles from the downloaded `LevelRevisionDto` before any pipe placement begins.
+
+### Viewport behaviour
+
+- The playfield viewport supports pinch-to-zoom between **100% and 300%** scale.
+- The default zoom is **100%**.
+- If the rendered board is wider or taller than the viewport, dragging pans horizontally and vertically across the board.
+- Pinch and drag gestures only change the viewport transform. They do not modify the board state, timer, or score.
+- Single-cell placement remains tap-driven and continues to work inside the current zoomed or panned viewport position.
 
 ### Cell state
 
@@ -148,6 +158,8 @@ The playfield grid occupies the **right portion of the gameplay screen** (approx
 - A single tap on a cell triggers placement of the next stack item.
 - There is no drag-and-drop; tap only.
 - Placement is immediate with no confirmation.
+- A two-finger pinch changes the playfield viewport zoom level.
+- A drag gesture scrolls the playfield viewport whenever content extends beyond the visible bounds.
 
 ---
 
@@ -177,9 +189,9 @@ Start and finish point tiles are fixed and rendered as part of the playfield gri
 │  HUD: level name │ score │ speed indicator │ timer           │
 ├────────────┬─────────────────────────────────────────────────┤
 │            │                                                  │
-│  PIPE      │               PLAYFIELD GRID                    │
+│  PIPE      │            PLAYFIELD VIEWPORT                   │
 │  STACK     │                                                  │
-│  (10 items)│       [fixed tiles + player pipes]              │
+│  (10 items)│    [zoomable / scrollable playfield grid]       │
 │            │                                                  │
 │  ↑ next 9  │                                                  │
 │            │                                                  │
@@ -190,7 +202,14 @@ Start and finish point tiles are fixed and rendered as part of the playfield gri
 
 - HUD height: fixed, minimal (~48 dp).
 - Stack width: fixed (~80–100 dp).
-- Grid: fills remaining space; cells sized by available width divided by column count.
+- Grid viewport: fills remaining space; the visible region is clipped while the rendered board may be larger than the viewport.
+
+## Pre-start modal
+
+- When a released level finishes loading, gameplay pauses behind a modal card.
+- The modal shows the level number, difficulty, flow timeout, and flow speed indicator from the downloaded level data.
+- A `Start` button at the bottom of the card dismisses the modal and begins the level's pre-flow countdown.
+- The board remains visible behind the modal so the player can preview the layout before starting.
 
 ---
 
@@ -223,7 +242,9 @@ When the start delay expires:
 - After placement, the stack shifts and a new item is appended at the top.
 - The start tile renders its `OutputDirection` as a visible directional indicator.
 - The finish tile renders its required `EntryDirection` as a visible directional indicator.
-- The layout allocates left sidebar for the stack and the remaining width for the grid.
+- The layout allocates left sidebar for the stack and the remaining width for the playfield viewport.
+- The playfield viewport supports pinch-to-zoom from 100% to 300%.
+- When the rendered board exceeds the visible area, dragging pans across the playfield in both directions.
 - Code coverage for pipe control logic remains at or above 80%.
 
 ---
@@ -241,6 +262,7 @@ When the start delay expires:
   - `CrossPipeControl.xaml/.cs`
 - Pipe stack: `src/Game/HexMaster.FloodRush.Game/Controls/PipeStackControl.xaml/.cs`
 - Playfield grid: `src/Game/HexMaster.FloodRush.Game/Controls/PlayfieldGridControl.xaml/.cs`
+- Playfield viewport: `src/Game/HexMaster.FloodRush.Game/Controls/ZoomablePlayfieldViewport.xaml/.cs`
 - Fixed tile controls: `src/Game/HexMaster.FloodRush.Game/Controls/Tiles/`
   - `StartPointTileControl.xaml/.cs`
   - `FinishPointTileControl.xaml/.cs`
@@ -249,3 +271,4 @@ When the start delay expires:
 - `GameplayViewModel` drives the overall game session; it subscribes to pipe events and forwards them to `GameSession.Tick(elapsedMs)`.
 - The water animation layer is a MAUI `GraphicsView` or `SKCanvasView` (if SkiaSharp is added) overlaid on the pipe path shape.
 - `BoardDirection` and `PipeSectionType` come from `HexMaster.FloodRush.Game.Core`; do not redefine them in the MAUI project.
+- Keep viewport zoom and scroll math separate from flow rules so changing the visible region never changes deterministic gameplay behaviour.

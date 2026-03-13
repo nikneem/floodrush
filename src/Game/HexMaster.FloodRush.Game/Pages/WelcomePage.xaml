@@ -40,6 +40,54 @@
                                   HorizontalOptions="End"
                                   WidthRequest="260"/>
         </Grid>
+
+        <Grid IsVisible="{Binding IsQuitConfirmationVisible}">
+            <BoxView Color="{StaticResource AppBackground}"
+                     Opacity="0.82"/>
+
+            <Border Style="{StaticResource GameCardStyle}"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    MaximumWidthRequest="520">
+                <Grid RowDefinitions="Auto,Auto,Auto"
+                      RowSpacing="16">
+                    <VerticalStackLayout Grid.Row="0"
+                                         Spacing="8">
+                        <Label Text="Quit FloodRush?"
+                               Style="{StaticResource PageTitleStyle}"
+                               HorizontalTextAlignment="Center"/>
+                        <Label Text="Your current session will close and you'll return to the operating system."
+                               Style="{StaticResource BodyTextStyle}"
+                               HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+
+                    <Grid Grid.Row="1"
+                          ColumnDefinitions="Auto,*"
+                          ColumnSpacing="12">
+                        <CheckBox IsChecked="{Binding DoNotShowQuitDialogAgain}"
+                                  Color="{StaticResource BrandAmber}"
+                                  VerticalOptions="Center"/>
+                        <Label Grid.Column="1"
+                               Text="Not show this dialog again"
+                               Style="{StaticResource BodyTextStyle}"
+                               VerticalOptions="Center"/>
+                    </Grid>
+
+                    <Grid Grid.Row="2"
+                          ColumnDefinitions="*,*"
+                          ColumnSpacing="12">
+                        <Button Grid.Column="0"
+                                Text="Cancel"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding CancelQuitCommand}"/>
+                        <Button Grid.Column="1"
+                                Text="Quit"
+                                Style="{StaticResource DangerButtonStyle}"
+                                Command="{Binding ConfirmQuitCommand}"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </ContentPage>
 

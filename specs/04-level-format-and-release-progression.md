@@ -8,6 +8,7 @@ Each level definition must include:
 - Stable level identifier
 - Version number or revision token
 - Display name
+- Difficulty label for release and pre-start presentation
 - Board width and height
 - Start delay
 - Flow speed indicator
@@ -37,6 +38,16 @@ Each level definition must include:
 - Downloaded levels are stored locally with their revision token.
 - Obsolete cached levels may remain playable offline if tied to unfinished local progress.
 - The sync system should fetch newly released levels without requiring a full data reset.
+- When the released-level catalog refresh succeeds, the client should cache both the released summaries and their downloadable revisions so offline gameplay can continue without another server round-trip.
+
+## Initial released level
+- The API ships with an initial released level for development and early playtesting.
+- The released summary and downloadable revision both carry the level difficulty so the client can show consistent level-selection and pre-start details.
+- The initial level uses a board that is **10 tiles wide** and **6 tiles high**.
+- The initial level difficulty is **Easy**.
+- The start point is placed on the **first column** and emits flow toward the right.
+- The finish point is placed on the **last column** and accepts flow from the left.
+- The level uses a **60-second pre-flow timeout** (`StartDelayMilliseconds = 60000`) and a **flow speed indicator of 1**.
 
 ## Acceptance criteria
 - `LevelDefinition` carries `DisplayName`, `InventoryRules`, and `ScoringOverrides` in addition to the core board data.

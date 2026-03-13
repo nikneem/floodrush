@@ -121,20 +121,23 @@ The `GameTitleView` component produces the animated game title:
 Two-column landscape layout backed by the `main_screen_background.png` illustration with a directional dark overlay.
 
 - **Left column** — `GameTitleView` component: animated "FloodRush" title in Peralta font with layered amber glow + breathing animation, tagline in PatrickHand, sliding accent rule.
-- **Right column** — `MainMenuView` component: three action buttons (**Play / Continue**, **Load Level**, **Settings**) with stagger-entrance animation on load.
+- **Right column** — `MainMenuView` component: four action buttons (**Play / Continue**, **Load Level**, **Settings**, **Quit**) with stagger-entrance animation on load.
 
 The `WelcomeViewModel.PlayButtonText` property returns `"Continue"` when `ILocalStateService.HasActiveProgress` is true, otherwise `"Play"`. `OnAppearing` calls `RefreshState()` so the button text updates each time the player returns to this screen.
+
+Choosing **Quit** opens a centered confirmation card over the welcome screen. The player can cancel, confirm quit, or tick **Not show this dialog again** to suppress future confirmations. That preference is stored locally and only persisted when the player confirms the quit action.
 
 
 
 ### Level selection page (`Pages/LevelSelectionPage.xaml`)
 
-Three-column grid of `GameCard` bordered tiles. Each card shows the level display name, difficulty label, and a **Play** button. Data is currently stubbed in `LevelSelectionViewModel.LoadLevels()`; real level loading from local cache is wired in spec 7.
+Three-column grid of `GameCard` bordered tiles. Each card shows the level display name, difficulty label, flow speed indicator, and a **Play** button. On appearance, the page authenticates the device, refreshes the released-level API catalog in the background, and cancels that work if the player navigates back before it completes. A lightweight loading overlay appears while the catalog is being fetched, connection failures are surfaced inline, and cached released levels remain available offline.
 
 ### Gameplay page (`Pages/GameplayPage.xaml`)
 
-- **HUD strip** (top row) — Level ID, prep countdown, live score, pause button.
-- **Board area** — Placeholder `Border` with "Game Board" label; full tile rendering connects to the `GameSession` engine in spec 7.
+- **HUD strip** (top row) — Display name, prep countdown, flow speed indicator, pause button.
+- **Board area** — `ZoomablePlayfieldViewport` hosting a rendered board built from the downloaded level revision. Fixed tiles are drawn into the playfield grid immediately so the player can inspect the board. The client prefers a fresh server copy when online and falls back to cached released levels and revisions when offline.
+- **Pre-start modal** — Centered `GameCard` shown after the level revision loads. It displays the level number, difficulty, flow timeout, and flow speed, with a **Start** button at the bottom that dismisses the modal and starts the countdown.
 - **PauseResultOverlay** — shown when `IsPaused` or `IsGameOver` is true (see below).
 
 ### Settings page (`Pages/SettingsPage.xaml`)
@@ -159,10 +162,22 @@ All services, ViewModels, and pages are registered in `MauiProgram.cs`:
 
 - `INavigationService` / `NavigationService` — **singleton**
 - `ILocalStateService` / `LocalStateService` — **singleton**
+- `IApplicationExitService` / `ApplicationExitService` — **singleton**
+- `IApiBaseUrlProvider` / `ApiBaseUrlProvider` — **singleton**
+- `IDeviceAuthenticationService` / `DeviceAuthenticationService` — **singleton**
+- `ILevelsApiService` / `LevelsApiService` — **singleton**
 - All ViewModels — **transient**
 - All pages — **transient**
 
 Pages receive their ViewModel via constructor injection, which DI resolves automatically when `Shell` navigates to a registered route.
+
+## Observability
+
+The MAUI client emits OpenTelemetry logs, traces, and metrics during connected runs. `MauiProgram.cs` owns the telemetry setup, while gameplay and shell flows emit app-specific telemetry through a shared game `ActivitySource` and `Meter`.
+
+- Navigation emits telemetry whenever the player moves between Welcome, Level Selection, Gameplay, and Settings.
+- Device login, released-level refresh, level revision download, and offline cache fallback all emit logs and spans so API and local-cache behavior can be compared in Aspire.
+- Gameplay level load, pre-start actions, quit confirmation, and settings changes emit client-side telemetry so UI state changes can be diagnosed without freezing the app.
 
 ## Project layout
 
@@ -171,7 +186,11 @@ src/Game/HexMaster.FloodRush.Game/
 ├── Converters/        InverseBoolConverter
 ├── Pages/             WelcomePage, LevelSelectionPage, GameplayPage, SettingsPage
 ├── Services/          AppRoutes, INavigationService, NavigationService,
-│                      ILocalStateService, LocalStateService
+│                      ILocalStateService, LocalStateService,
+│                      IApplicationExitService, ApplicationExitService,
+│                      IApiBaseUrlProvider, ApiBaseUrlProvider,
+│                      IDeviceAuthenticationService, DeviceAuthenticationService,
+│                      ILevelsApiService, LevelsApiService
 ├── ViewModels/        BaseViewModel, WelcomeViewModel, LevelSelectionViewModel,
 │                      GameplayViewModel, SettingsViewModel
 ├── Views/             PauseResultOverlay

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using HexMaster.FloodRush.Server.Abstractions.Features;
 using HexMaster.FloodRush.Server.Abstractions.Security;
+using HexMaster.FloodRush.Server.Levels.Features.GetLevelRevision;
 using HexMaster.FloodRush.Server.Levels.Features.GetReleasedLevels;
 using HexMaster.FloodRush.Shared.Contracts.Levels;
 using Microsoft.AspNetCore.Builder;
@@ -28,6 +29,22 @@ public static class LevelsModuleEndpointRouteBuilderExtensions
         })
         .RequireAuthorization()
         .WithName("Levels_GetReleased");
+
+        group.MapGet("/{levelId}/revisions/{revision}", async (
+            string levelId,
+            string revision,
+            ClaimsPrincipal principal,
+            IQueryHandler<GetLevelRevisionQuery, LevelRevisionDto?> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await handler.HandleAsync(
+                new GetLevelRevisionQuery(principal.GetRequiredProfileId(), levelId, revision),
+                cancellationToken);
+
+            return response is null ? Results.NotFound() : Results.Ok(response);
+        })
+        .RequireAuthorization()
+        .WithName("Levels_GetRevision");
 
         return endpoints;
     }

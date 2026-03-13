@@ -69,6 +69,22 @@ The server is the authority for which levels are released to a profile:
 - The `Load Level` screen only lists levels that have been released to the current profile.
 - Levels are available locally (cached) or fetched from the server on demand.
 - The sync system fetches newly released levels without requiring a full data reset.
+- A successful released-level refresh should also persist the corresponding downloadable revisions locally so the player can continue into gameplay while offline.
+
+## Initial released level
+
+The API currently includes a first built-in released level intended to bootstrap end-to-end development:
+
+- `LevelId`: `level-001`
+- Display name: `Level 1 - First Flow`
+- Difficulty: `Easy`
+- Board size: **10 x 6**
+- Start point: first column, flowing right
+- Finish point: last column, accepting from the left
+- Pre-flow timeout: **60 seconds**
+- Flow speed indicator: **1**
+
+Both the released-level summary payload and the downloadable level revision carry this difficulty label so the MAUI client can show matching details in the level list and the gameplay start modal.
 
 ## Local cache tracking
 

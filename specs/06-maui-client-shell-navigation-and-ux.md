@@ -12,12 +12,15 @@ The welcome page must contain:
 - `Play` or `Continue`
 - `Load Level`
 - `Settings`
+- `Quit`
 
 ## Button behavior
 - Show `Play` when no local play history exists.
 - Show `Continue` when the user has an in-progress or resumable state.
-- `Load Level` opens a released-level selection experience.
+- `Load Level` opens a released-level selection experience backed by the server's released-level catalog after device login.
+- Leaving the level selection page cancels any in-flight released-level refresh.
 - `Settings` opens configuration and game settings.
+- `Quit` opens a confirmation dialog before exiting the app, unless the player has previously opted out of that confirmation.
 
 ## Core screens
 - Welcome page
@@ -33,7 +36,8 @@ The active gameplay screen uses a fixed three-zone landscape layout:
 
 - **HUD strip** — top bar showing level name, current score, flow speed indicator, and the pre-flow countdown timer.
 - **Pipe stack sidebar** — left column (~80–100 dp) showing the 10 upcoming pipe sections. The bottom item is highlighted as "next to place".
-- **Playfield grid** — remaining width; the level board with fixed tiles and player-placed pipes.
+- **Playfield viewport** — remaining width; a clipped viewport that hosts the playfield grid with fixed tiles and player-placed pipes.
+- Before countdown begins, the gameplay page shows a centered modal summarising the selected level number, difficulty, flow timeout, and flow speed indicator, with a `Start` button pinned to the bottom of the card.
 
 ## Pipe placement stack
 
@@ -49,8 +53,13 @@ The active gameplay screen uses a fixed three-zone landscape layout:
 - Tapping a cell with an existing (unlocked) pipe **replaces** it.
 - Locked cells (flow has reached them) and fixed tiles cannot be tapped.
 - The bottom stack item is consumed immediately; there is no drag-and-drop.
+- The playfield viewport supports pinch-to-zoom from 100% to 300%.
+- When the rendered playfield is larger than the visible viewport, dragging pans the viewport across the board in both directions.
+- Zooming and panning must preserve the three-zone landscape layout; the player does not leave the gameplay screen to inspect the rest of the board.
 
 - The gameplay board should maximize usable horizontal space.
+- Entering gameplay for a released level downloads the current level revision from the API and renders the fixed-tile board before play begins.
+- The playfield viewport should prioritize keeping the active area visible while still allowing inspection of off-screen board regions through pinch and drag gestures.
 - The player must be able to distinguish fixed tiles from placeable pipes clearly.
 - Flow speed, remaining preparation time, and required finish points should be visible during play.
 - Offline availability and sync state should be understandable without blocking gameplay.
@@ -107,6 +116,10 @@ Pages are thin orchestration shells. Visual sections must be extracted into reus
 
 ## Acceptance criteria
 - A new player can navigate from the welcome page into a playable level without confusion.
+- The welcome page exposes a fourth `Quit` button and confirms app exit unless the locally stored opt-out preference suppresses the dialog.
+- The level selection page authenticates the device, loads released levels from the API, and lists the server-provided display name, difficulty, and speed indicator.
+- Level selection loading must not block the UI thread; failures surface a visible error message and cached released levels remain available offline.
+- The MAUI client emits structured logs, traces, and metrics for navigation, authentication, released-level refresh, cache fallback, gameplay level loading, quit confirmation, and settings changes.
 - Orientation behavior is enforced on supported mobile targets.
 - All button styles (primary, secondary, danger) are defined in `Resources/Styles/Styles.xaml` and applied via style keys — no inline color or gradient declarations on individual pages or components.
 - All colours are defined in `Resources/Styles/Colors.xaml` and referenced by key.

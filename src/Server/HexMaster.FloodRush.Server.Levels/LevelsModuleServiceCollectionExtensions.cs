@@ -1,5 +1,6 @@
 using HexMaster.FloodRush.Server.Abstractions.Features;
 using HexMaster.FloodRush.Server.Levels.Data;
+using HexMaster.FloodRush.Server.Levels.Features.GetLevelRevision;
 using HexMaster.FloodRush.Server.Levels.Features.GetReleasedLevels;
 using HexMaster.FloodRush.Shared.Contracts.Levels;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +14,9 @@ public static class LevelsModuleServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddSingleton<BuiltInLevelsCatalog>();
         services.AddSingleton<ILevelsRepository, TableLevelsRepository>();
+        services.AddScoped<IQueryHandler<GetLevelRevisionQuery, LevelRevisionDto?>, GetLevelRevisionQueryHandler>();
         services.AddScoped<IQueryHandler<GetReleasedLevelsQuery, ReleasedLevelsResponse>, GetReleasedLevelsQueryHandler>();
 
         return services;

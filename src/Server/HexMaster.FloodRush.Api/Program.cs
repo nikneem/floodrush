@@ -1,6 +1,7 @@
 using HexMaster.FloodRush.Server.Levels;
 using HexMaster.FloodRush.Server.Profiles;
 using HexMaster.FloodRush.Server.Scores;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,10 @@ app.MapDefaultEndpoints();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.WithOpenApiRoutePattern("/openapi/{documentName}.json");
+    });
 }
 
 app.UseHttpsRedirection();

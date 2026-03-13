@@ -26,5 +26,11 @@
                 Command="{Binding SettingsCommand}"
                 HorizontalOptions="Fill"/>
 
+        <Button x:Name="QuitButton"
+                Text="Quit"
+                Style="{StaticResource DangerButtonStyle}"
+                Command="{Binding QuitCommand}"
+                HorizontalOptions="Fill"/>
+
     </VerticalStackLayout>
 </ContentView>
