@@ -3,8 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="HexMaster.FloodRush.Game.Views.LevelFailedOverlay">
     <Grid>
-        <!-- Deep semi-transparent overlay with a danger tint -->
-        <BoxView Color="{StaticResource AppBackground}" Opacity="0.92"/>
+        <!-- Full-bleed failure visual -->
+        <Image Source="level_failed_visual.png"
+               Aspect="AspectFill"
+               Opacity="0.92"/>
+        <!-- Subtle dark veil so the card stays readable -->
+        <BoxView Color="{StaticResource AppBackground}" Opacity="0.45"/>
 
         <!-- Centred failure card -->
         <Border Style="{StaticResource GameCardStyle}"

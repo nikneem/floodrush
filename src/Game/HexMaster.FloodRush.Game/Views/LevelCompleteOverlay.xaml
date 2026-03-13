@@ -3,8 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="HexMaster.FloodRush.Game.Views.LevelCompleteOverlay">
     <Grid>
-        <!-- Deep semi-transparent overlay with a success tint -->
-        <BoxView Color="{StaticResource AppBackground}" Opacity="0.88"/>
+        <!-- Full-bleed celebration visual -->
+        <Image Source="level_completed_visual.png"
+               Aspect="AspectFill"
+               Opacity="0.92"/>
+        <!-- Subtle dark veil so the card stays readable -->
+        <BoxView Color="{StaticResource AppBackground}" Opacity="0.45"/>
 
         <!-- Centred celebration card -->
         <Border Style="{StaticResource GameCardStyle}"
