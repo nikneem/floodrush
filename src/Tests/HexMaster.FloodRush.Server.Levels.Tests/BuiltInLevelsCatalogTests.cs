@@ -1,3 +1,6 @@
+using System.Reflection;
+using HexMaster.FloodRush.Game.Core.Domain.Board;
+using HexMaster.FloodRush.Game.Core.Domain.Tiles;
 using HexMaster.FloodRush.Server.Levels.Data;
 using HexMaster.FloodRush.Shared.Contracts.Levels;
 
@@ -51,5 +54,66 @@ public sealed class BuiltInLevelsCatalogTests
         var level = catalog.GetLevelRevision(BuiltInLevelsCatalog.FirstLevelId, "different-revision");
 
         Assert.Null(level);
+    }
+
+    [Fact]
+    public void MapFixedTile_FluidBasin_MapsCorrectly()
+    {
+        var fluidBasin = new FluidBasinTile(
+            new Game.Core.Domain.Board.GridPosition(3, 2),
+            BoardDirection.Top,
+            BoardDirection.Bottom,
+            5000,
+            50);
+
+        var result = InvokeMapFixedTile(fluidBasin);
+
+        Assert.Equal(LevelFixedTileTypeDto.FluidBasin, result.TileType);
+        Assert.Equal(3, result.X);
+        Assert.Equal(2, result.Y);
+        Assert.Equal(BoardDirectionDto.Top, result.EntryDirection);
+        Assert.Equal(BoardDirectionDto.Bottom, result.OutputDirection);
+        Assert.Equal(5000, result.FillDelayMilliseconds);
+    }
+
+    [Fact]
+    public void MapFixedTile_SplitSection_MapsCorrectly()
+    {
+        var splitSection = new SplitSectionTile(
+            new Game.Core.Domain.Board.GridPosition(5, 3),
+            BoardDirection.Left,
+            BoardDirection.Right,
+            BoardDirection.Bottom,
+            100,
+            75);
+
+        var result = InvokeMapFixedTile(splitSection);
+
+        Assert.Equal(LevelFixedTileTypeDto.SplitSection, result.TileType);
+        Assert.Equal(5, result.X);
+        Assert.Equal(3, result.Y);
+        Assert.Equal(BoardDirectionDto.Left, result.EntryDirection);
+        Assert.Equal(BoardDirectionDto.Right, result.OutputDirection);
+        Assert.Equal(BoardDirectionDto.Bottom, result.SecondaryOutputDirection);
+        Assert.Equal(100, result.SpeedModifierPercent);
+    }
+
+    [Fact]
+    public void MapDirection_InvalidDirection_ThrowsViaReflection()
+    {
+        var method = typeof(BuiltInLevelsCatalog)
+            .GetMethod("MapDirection", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        var ex = Assert.Throws<TargetInvocationException>(() =>
+            method.Invoke(null, [(object)(BoardDirection)99]));
+
+        Assert.IsType<ArgumentOutOfRangeException>(ex.InnerException);
+    }
+
+    private static LevelFixedTileDto InvokeMapFixedTile(FixedTile tile)
+    {
+        var method = typeof(BuiltInLevelsCatalog)
+            .GetMethod("MapFixedTile", BindingFlags.NonPublic | BindingFlags.Static)!;
+        return (LevelFixedTileDto)method.Invoke(null, [tile])!;
     }
 }
