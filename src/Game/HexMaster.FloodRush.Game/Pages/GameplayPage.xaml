@@ -106,13 +106,17 @@
                         HorizontalOptions="Center"
                         VerticalOptions="Center"
                         MaximumWidthRequest="560">
-                    <VerticalStackLayout Spacing="12">
+                    <VerticalStackLayout Spacing="16">
                         <Label Text="Level load failed"
                                Style="{StaticResource SectionHeadingStyle}"
                                HorizontalTextAlignment="Center"/>
                         <Label Text="{Binding LoadErrorMessage}"
                                Style="{StaticResource BodyTextStyle}"
                                HorizontalTextAlignment="Center"/>
+                        <Button Text="← Back"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding QuitCommand}"
+                                HorizontalOptions="Center"/>
                     </VerticalStackLayout>
                 </Border>
             </Grid>

@@ -54,7 +54,8 @@ public sealed class DeviceAuthenticationService : IDeviceAuthenticationService
             {
                 using var client = new HttpClient(apiBaseUrlProvider.CreateHandler())
                 {
-                    BaseAddress = apiBaseUrlProvider.GetBaseUri()
+                    BaseAddress = apiBaseUrlProvider.GetBaseUri(),
+                    Timeout = TimeSpan.FromSeconds(15)
                 };
 
                 var response = await client.PostAsJsonAsync(

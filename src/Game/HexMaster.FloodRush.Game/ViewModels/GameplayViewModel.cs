@@ -374,8 +374,11 @@ public sealed class GameplayViewModel : BaseViewModel
 
     public async Task LoadLevelAsync(CancellationToken cancellationToken = default)
     {
+        logger.LogDebug("LoadLevelAsync called. LevelId='{LevelId}', IsBusy={IsBusy}.", LevelId, IsBusy);
+
         if (IsBusy || string.IsNullOrWhiteSpace(LevelId))
         {
+            logger.LogWarning("LoadLevelAsync skipped: LevelId is '{LevelId}', IsBusy={IsBusy}.", LevelId, IsBusy);
             return;
         }
 
@@ -419,9 +422,16 @@ public sealed class GameplayViewModel : BaseViewModel
             activity?.SetStatus(ActivityStatusCode.Ok);
             logger.LogInformation("Loaded level {LevelId} from {Source}.", releasedLevel.LevelId, source);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            logger.LogDebug("Canceled level load for {LevelId}.", LevelId);
+            logger.LogDebug("Level load for {LevelId} was canceled by the user.", LevelId);
+        }
+        catch (OperationCanceledException exception)
+        {
+            // Not a user cancellation — most likely an HTTP client timeout.
+            LoadErrorMessage = "Level load timed out. Check your connection and try again.";
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            logger.LogWarning(exception, "Level load for {LevelId} timed out (likely an HTTP client timeout).", LevelId);
         }
         catch (HttpRequestException exception)
         {
@@ -1125,6 +1135,10 @@ public sealed class GameplayViewModel : BaseViewModel
                 DateTimeOffset.UtcNow);
 
             await scoresApiService.SubmitScoreAsync(request, cts.Token);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to submit score for level {LevelId}.", LevelId);
         }
         finally
         {

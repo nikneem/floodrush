@@ -1,19 +1,22 @@
 using System.ComponentModel;
 using HexMaster.FloodRush.Game.Controls;
 using HexMaster.FloodRush.Game.ViewModels;
+using Microsoft.Extensions.Logging;
 
 namespace HexMaster.FloodRush.Game.Pages;
 
 public partial class GameplayPage : ContentPage
 {
     private readonly GameplayViewModel viewModel;
+    private readonly ILogger<GameplayPage> logger;
     private CancellationTokenSource? loadLevelCancellationTokenSource;
     private CancellationTokenSource? preStartPresentationCancellationTokenSource;
 
-    public GameplayPage(GameplayViewModel viewModel)
+    public GameplayPage(GameplayViewModel viewModel, ILogger<GameplayPage> logger)
     {
         InitializeComponent();
         this.viewModel = viewModel;
+        this.logger = logger;
         this.viewModel.PropertyChanged += OnViewModelPropertyChanged;
         this.viewModel.BeginTileFlow += OnBeginTileFlow;
         this.viewModel.PipeRemovalStarted += OnPipeRemovalStarted;
@@ -22,9 +25,32 @@ public partial class GameplayPage : ContentPage
         BindingContext = viewModel;
     }
 
+    protected override void OnNavigatedTo(NavigatedToEventArgs args)
+    {
+        base.OnNavigatedTo(args);
+        // OnNavigatedTo fires after Shell has applied all [QueryProperty] values, so
+        // LevelId is guaranteed to be set here. We trigger loading here as the primary
+        // trigger and keep OnAppearing as a fallback.
+        logger.LogInformation("GameplayPage.OnNavigatedTo. LevelId='{LevelId}'.", viewModel.LevelId);
+        TriggerLevelLoad();
+    }
+
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        logger.LogInformation(
+            "GameplayPage.OnAppearing. LevelId='{LevelId}', HasLevelLoaded={HasLevelLoaded}.",
+            viewModel.LevelId, viewModel.HasLevelLoaded);
+        TriggerLevelLoad();
+    }
+
+    private void TriggerLevelLoad()
+    {
+        if (viewModel.IsBusy || viewModel.HasLevelLoaded)
+        {
+            return;
+        }
+
         loadLevelCancellationTokenSource?.Cancel();
         loadLevelCancellationTokenSource?.Dispose();
         loadLevelCancellationTokenSource = new CancellationTokenSource();
