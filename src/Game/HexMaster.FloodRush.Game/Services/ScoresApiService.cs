@@ -79,7 +79,7 @@ public sealed class ScoresApiService : IScoresApiService
 
     private async Task<HttpClient> CreateAuthenticatedClientAsync(CancellationToken cancellationToken)
     {
-        var client = new HttpClient
+        var client = new HttpClient(apiBaseUrlProvider.CreateHandler())
         {
             BaseAddress = apiBaseUrlProvider.GetBaseUri()
         };

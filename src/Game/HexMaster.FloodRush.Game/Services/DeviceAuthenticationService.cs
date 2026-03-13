@@ -52,7 +52,7 @@ public sealed class DeviceAuthenticationService : IDeviceAuthenticationService
             var stopwatch = Stopwatch.StartNew();
             try
             {
-                using var client = new HttpClient
+                using var client = new HttpClient(apiBaseUrlProvider.CreateHandler())
                 {
                     BaseAddress = apiBaseUrlProvider.GetBaseUri()
                 };
