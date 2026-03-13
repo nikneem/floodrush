@@ -64,4 +64,27 @@ internal sealed class TableScoresRepository : IScoresRepository
             .Take(take)
             .ToArray();
     }
+
+    public async ValueTask<LevelScoreDto?> GetPlayerBestScoreAsync(
+        string profileId,
+        string levelId,
+        CancellationToken cancellationToken)
+    {
+        await tableClient.CreateIfNotExistsAsync(cancellationToken);
+
+        var scores = new List<LevelScoreDto>();
+        var query = tableClient.QueryAsync<LevelScoreEntity>(
+            entity => entity.PartitionKey == levelId && entity.ProfileId == profileId,
+            cancellationToken: cancellationToken);
+
+        await foreach (var entity in query)
+        {
+            scores.Add(entity.ToDto());
+        }
+
+        return scores
+            .OrderByDescending(s => s.Points)
+            .ThenBy(s => s.AchievedAtUtc)
+            .FirstOrDefault();
+    }
 }

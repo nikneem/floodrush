@@ -241,6 +241,20 @@ public sealed class PlayfieldBoardView : ContentView
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Plays a brief red flash on the tile at (<paramref name="x"/>, <paramref name="y"/>)
+    /// to signal that the tap was an illegal move.
+    /// </summary>
+    public Task FlashIllegalMoveAsync(int x, int y)
+    {
+        if (tileViews.TryGetValue((x, y), out var view))
+        {
+            return view.FlashIllegalMoveAsync();
+        }
+
+        return Task.CompletedTask;
+    }
+
     private double CalculateBoardAxisLength(int cellCount) =>
         (Math.Max(0, cellCount) * TileSize) +
         (Math.Max(0, cellCount - 1) * TileSpacing) +

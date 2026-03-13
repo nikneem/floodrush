@@ -46,26 +46,45 @@
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="vm:LevelListItem">
                         <Border Style="{StaticResource GameCardStyle}">
-                            <Grid RowDefinitions="*,Auto,Auto,Auto" RowSpacing="8">
-                                <Label Grid.Row="0"
-                                       Text="{Binding DisplayName}"
-                                       Style="{StaticResource SectionHeadingStyle}"
-                                       FontSize="16"
-                                       HorizontalOptions="Start"/>
-                                <Label Grid.Row="1"
-                                       Text="{Binding Difficulty}"
-                                       Style="{StaticResource MutedTextStyle}"/>
-                                <Label Grid.Row="2"
-                                       Text="{Binding FlowSpeedIndicator, StringFormat='Flow speed: {0}'}"
-                                       Style="{StaticResource BodyTextStyle}"/>
-                                <Button Grid.Row="3"
-                                        Text="Play"
-                                        Style="{StaticResource PrimaryButtonStyle}"
-                                        Padding="16,8"
-                                        FontSize="13"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectLevelCommand}"
-                                        CommandParameter="{Binding .}"
-                                        HorizontalOptions="Fill"/>
+                            <Grid>
+                                <!-- Level info and play button -->
+                                <Grid RowDefinitions="*,Auto,Auto,Auto" RowSpacing="8">
+                                    <Label Grid.Row="0"
+                                           Text="{Binding DisplayName}"
+                                           Style="{StaticResource SectionHeadingStyle}"
+                                           FontSize="16"
+                                           HorizontalOptions="Start"/>
+                                    <Label Grid.Row="1"
+                                           Text="{Binding Difficulty}"
+                                           Style="{StaticResource MutedTextStyle}"/>
+                                    <Label Grid.Row="2"
+                                           Text="{Binding FlowSpeedIndicator, StringFormat='Flow speed: {0}'}"
+                                           Style="{StaticResource BodyTextStyle}"/>
+                                    <Button Grid.Row="3"
+                                            Text="Play"
+                                            Style="{StaticResource PrimaryButtonStyle}"
+                                            Padding="16,8"
+                                            FontSize="13"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectLevelCommand}"
+                                            CommandParameter="{Binding .}"
+                                            HorizontalOptions="Fill"/>
+                                </Grid>
+
+                                <!-- Lock overlay — covers the card when IsLocked -->
+                                <Grid IsVisible="{Binding IsLocked}"
+                                      BackgroundColor="{StaticResource AppBackground}"
+                                      Opacity="0.82">
+                                    <VerticalStackLayout HorizontalOptions="Center"
+                                                         VerticalOptions="Center"
+                                                         Spacing="6">
+                                        <Label Text="🔒"
+                                               FontSize="30"
+                                               HorizontalTextAlignment="Center"/>
+                                        <Label Text="Locked"
+                                               Style="{StaticResource MutedTextStyle}"
+                                               HorizontalTextAlignment="Center"/>
+                                    </VerticalStackLayout>
+                                </Grid>
                             </Grid>
                         </Border>
                     </DataTemplate>

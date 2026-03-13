@@ -64,6 +64,50 @@
                            VerticalOptions="Center"/>
                 </StackLayout>
 
+                <!-- Highscores -->
+                <Grid ColumnDefinitions="*,1,*"
+                      RowDefinitions="Auto,Auto,Auto"
+                      ColumnSpacing="16"
+                      RowSpacing="4">
+
+                    <!-- Divider -->
+                    <BoxView Grid.Row="0" Grid.ColumnSpan="3"
+                             Color="{StaticResource SurfaceSecondary}"
+                             HeightRequest="1"
+                             Margin="0,4"/>
+
+                    <!-- Column headers -->
+                    <Label Grid.Row="1" Grid.Column="0"
+                           Text="Your best"
+                           Style="{StaticResource MutedTextStyle}"
+                           HorizontalTextAlignment="Center"/>
+                    <BoxView Grid.Row="1" Grid.Column="1"
+                             Color="{StaticResource SurfaceSecondary}"
+                             WidthRequest="1"/>
+                    <Label Grid.Row="1" Grid.Column="2"
+                           Text="Global best"
+                           Style="{StaticResource MutedTextStyle}"
+                           HorizontalTextAlignment="Center"/>
+
+                    <!-- Values -->
+                    <Label Grid.Row="2" Grid.Column="0"
+                           Text="{Binding PlayerHighScore, StringFormat='{0:N0} pts', TargetNullValue='—'}"
+                           FontFamily="PatrickHand"
+                           FontSize="22"
+                           TextColor="{StaticResource BrandAmber}"
+                           HorizontalTextAlignment="Center"/>
+                    <BoxView Grid.Row="2" Grid.Column="1"
+                             Color="{StaticResource SurfaceSecondary}"
+                             WidthRequest="1"/>
+                    <Label Grid.Row="2" Grid.Column="2"
+                           Text="{Binding GlobalHighScore, StringFormat='{0:N0} pts', TargetNullValue='—'}"
+                           FontFamily="PatrickHand"
+                           FontSize="22"
+                           TextColor="{StaticResource TextPrimary}"
+                           HorizontalTextAlignment="Center"/>
+
+                </Grid>
+
                 <!-- Actions -->
                 <Button Text="Next Level"
                         Style="{StaticResource PrimaryButtonStyle}"

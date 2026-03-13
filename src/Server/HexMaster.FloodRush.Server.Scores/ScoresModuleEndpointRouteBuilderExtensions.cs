@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using HexMaster.FloodRush.Server.Abstractions.Features;
 using HexMaster.FloodRush.Server.Abstractions.Security;
+using HexMaster.FloodRush.Server.Scores.Features.GetPlayerBestScore;
 using HexMaster.FloodRush.Server.Scores.Features.GetTopScores;
 using HexMaster.FloodRush.Server.Scores.Features.SubmitScore;
 using HexMaster.FloodRush.Shared.Contracts.Scores;
@@ -57,6 +58,23 @@ public static class ScoresModuleEndpointRouteBuilderExtensions
         .AllowAnonymous()
         .RequireRateLimiting(RateLimitPolicies.General)
         .WithName("Scores_GetTop");
+
+        group.MapGet("/my/{levelId}", async (
+            string levelId,
+            ClaimsPrincipal principal,
+            IQueryHandler<GetPlayerBestScoreQuery, LevelScoreDto?> handler,
+            CancellationToken cancellationToken) =>
+        {
+            var profileId = principal.GetRequiredProfileId();
+            var result = await handler.HandleAsync(
+                new GetPlayerBestScoreQuery(profileId, levelId),
+                cancellationToken);
+
+            return result is null ? Results.NoContent() : Results.Ok(result);
+        })
+        .RequireAuthorization()
+        .RequireRateLimiting(RateLimitPolicies.General)
+        .WithName("Scores_GetMyBest");
 
         return endpoints;
     }

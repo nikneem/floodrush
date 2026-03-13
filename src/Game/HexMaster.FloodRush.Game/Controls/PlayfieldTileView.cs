@@ -27,8 +27,10 @@ public sealed class PlayfieldTileView : ContentView
     private readonly BoxView overlay;
     private readonly Label titleLabel;
     private readonly Label subtitleLabel;
+    private readonly BoxView pipeFloodFill;
     private readonly BoxView fluidBlob;
     private readonly Label pointsLabel;
+    private readonly BoxView illegalFlash;
 
     public event EventHandler<TileFlowCompletedEventArgs>? FlowCompleted;
 
@@ -88,9 +90,21 @@ public sealed class PlayfieldTileView : ContentView
         {
             IsVisible = false,
             InputTransparent = true,
-            Color = Color.FromArgb("#3FB8F5"),
+            Color = GetColor("FluidWater"),
             HorizontalOptions = LayoutOptions.Center,
             VerticalOptions = LayoutOptions.Center
+        };
+
+        // Permanent water fill – fades in once the blob has passed through so the
+        // pipe looks visibly full rather than empty again after the drop moves on.
+        pipeFloodFill = new BoxView
+        {
+            IsVisible = false,
+            Opacity = 0,
+            InputTransparent = true,
+            Color = GetColor("FluidWater"),
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill
         };
 
         // "+N pts" pop-up label shown after the blob reaches its destination
@@ -106,14 +120,28 @@ public sealed class PlayfieldTileView : ContentView
             VerticalTextAlignment = TextAlignment.Center
         };
 
+        // Topmost flash layer – briefly turns red when the player taps a tile that
+        // fluid has already traversed (illegal placement).
+        illegalFlash = new BoxView
+        {
+            IsVisible = false,
+            Opacity = 0,
+            InputTransparent = true,
+            Color = GetColor("Danger"),
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill
+        };
+
         var tileVisual = new Grid();
         tileVisual.Children.Add(baseLayer);
         tileVisual.Children.Add(backgroundImage);
         tileVisual.Children.Add(pipeOverlayImage);
+        tileVisual.Children.Add(pipeFloodFill);  // water fill – above pipe PNG
         tileVisual.Children.Add(overlay);
         tileVisual.Children.Add(tileContent);
         tileVisual.Children.Add(fluidBlob);    // on top of content
-        tileVisual.Children.Add(pointsLabel);  // topmost
+        tileVisual.Children.Add(pointsLabel);  // "+N pts" popup
+        tileVisual.Children.Add(illegalFlash); // topmost – illegal move feedback
 
         tileBorder = new Border
         {
@@ -174,6 +202,10 @@ public sealed class PlayfieldTileView : ContentView
         subtitleLabel.Text = tile.Subtitle;
         subtitleLabel.TextColor = GetColor(subtitleColorKey);
         tileBorder.Stroke = GetTileStroke(tile.Kind);
+
+        // Reset water fill whenever the tile data changes (level load or pipe swap).
+        pipeFloodFill.IsVisible = false;
+        pipeFloodFill.Opacity = 0;
 
         if (!string.IsNullOrEmpty(tile.PipeOverlayImage))
         {
@@ -299,6 +331,10 @@ public sealed class PlayfieldTileView : ContentView
         fluidBlob.TranslationX = 0;
         fluidBlob.TranslationY = 0;
 
+        // Reveal the permanent water fill so the pipe looks full after the drop passes.
+        pipeFloodFill.IsVisible = true;
+        await pipeFloodFill.FadeTo(0.52, (uint)Math.Max(60, durationMs / 3), Easing.CubicOut);
+
         // Show "+N pts" pop-up when points were earned
         if (points > 0)
         {
@@ -381,5 +417,20 @@ public sealed class PlayfieldTileView : ContentView
         pipeOverlayImage.Opacity = 1;
         pipeOverlayImage.TranslationX = 0;
         pipeOverlayImage.TranslationY = 0;
+    }
+
+    /// <summary>
+    /// Briefly flashes the tile red to signal that placing a pipe here is illegal
+    /// (fluid has already flowed through this tile).
+    /// </summary>
+    public async Task FlashIllegalMoveAsync()
+    {
+        illegalFlash.Opacity = 0;
+        illegalFlash.IsVisible = true;
+
+        await illegalFlash.FadeTo(0.72, 80, Easing.CubicOut);
+        await illegalFlash.FadeTo(0, 220, Easing.CubicIn);
+
+        illegalFlash.IsVisible = false;
     }
 }

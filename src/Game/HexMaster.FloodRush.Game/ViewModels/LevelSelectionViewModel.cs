@@ -61,7 +61,7 @@ public sealed class LevelSelectionViewModel : BaseViewModel
 
         SelectLevelCommand = new Command<LevelListItem>(async item =>
         {
-            if (item is null)
+            if (item is null || item.IsLocked)
             {
                 return;
             }
@@ -183,14 +183,37 @@ public sealed class LevelSelectionViewModel : BaseViewModel
     {
         LoadErrorMessage = string.Empty;
         Levels.Clear();
-        foreach (var releasedLevel in releasedLevels)
+
+        // Establish a stable order: chronological release date → level sequence index (1-based).
+        var ordered = releasedLevels
+            .OrderBy(l => l.ReleasedAtUtc)
+            .ToList();
+
+        // Find the highest sequence index the player has completed.
+        var completedIds = new HashSet<string>(localState.CompletedLevelIds, StringComparer.Ordinal);
+        var highestCompletedIndex = 0;
+        for (var i = 0; i < ordered.Count; i++)
         {
+            if (completedIds.Contains(ordered[i].LevelId))
+            {
+                highestCompletedIndex = i + 1; // 1-based
+            }
+        }
+
+        // Levels up to (highestCompletedIndex + 1) are unlocked; everything beyond is locked.
+        var unlockedUpTo = highestCompletedIndex + 1;
+
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            var level = ordered[i];
+            var sequenceIndex = i + 1;
             Levels.Add(new LevelListItem(
-                releasedLevel.LevelId,
-                releasedLevel.DisplayName,
-                releasedLevel.Difficulty,
-                releasedLevel.FlowSpeedIndicator,
-                false));
+                level.LevelId,
+                level.DisplayName,
+                level.Difficulty,
+                level.FlowSpeedIndicator,
+                IsCompleted: completedIds.Contains(level.LevelId),
+                IsLocked: sequenceIndex > unlockedUpTo));
         }
     }
 
@@ -228,4 +251,5 @@ public sealed record LevelListItem(
     string DisplayName,
     string Difficulty,
     int FlowSpeedIndicator,
-    bool IsCompleted);
+    bool IsCompleted,
+    bool IsLocked);

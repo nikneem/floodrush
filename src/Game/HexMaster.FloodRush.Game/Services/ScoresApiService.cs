@@ -77,6 +77,76 @@ public sealed class ScoresApiService : IScoresApiService
         }
     }
 
+    public async Task<LevelScoreDto?> GetPlayerBestScoreAsync(
+        string levelId,
+        CancellationToken cancellationToken = default)
+    {
+        using var activity = FloodRushTelemetry.ActivitySource.StartActivity(
+            "scores-api.get-player-best", ActivityKind.Client);
+        activity?.SetTag("level.id", levelId);
+
+        logger.LogDebug("Fetching player best score for level {LevelId}.", levelId);
+
+        try
+        {
+            using var client = await CreateAuthenticatedClientAsync(cancellationToken);
+            using var response = await client.GetAsync($"api/scores/my/{Uri.EscapeDataString(levelId)}", cancellationToken);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<LevelScoreDto>(cancellationToken: cancellationToken);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            logger.LogDebug("Player best score for level {LevelId}: {Points} pts.", levelId, result?.Points);
+            return result;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            logger.LogDebug(exception, "Could not fetch player best score for level {LevelId} (network unavailable).", levelId);
+            return null;
+        }
+    }
+
+    public async Task<TopScoresResponse?> GetTopScoresAsync(
+        string levelId,
+        int take = 1,
+        CancellationToken cancellationToken = default)
+    {
+        using var activity = FloodRushTelemetry.ActivitySource.StartActivity(
+            "scores-api.get-top-scores", ActivityKind.Client);
+        activity?.SetTag("level.id", levelId);
+        activity?.SetTag("scores.take", take);
+
+        logger.LogDebug("Fetching top {Take} scores for level {LevelId}.", take, levelId);
+
+        try
+        {
+            using var client = new HttpClient(apiBaseUrlProvider.CreateHandler())
+            {
+                BaseAddress = apiBaseUrlProvider.GetBaseUri()
+            };
+            using var response = await client.GetAsync(
+                $"api/scores/top/{Uri.EscapeDataString(levelId)}?take={take}",
+                cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<TopScoresResponse>(cancellationToken: cancellationToken);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            logger.LogDebug("Global top score for level {LevelId}: {Points} pts.", levelId, result?.Scores.FirstOrDefault()?.Points);
+            return result;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            logger.LogDebug(exception, "Could not fetch top scores for level {LevelId} (network unavailable).", levelId);
+            return null;
+        }
+    }
+
     private async Task<HttpClient> CreateAuthenticatedClientAsync(CancellationToken cancellationToken)
     {
         var client = new HttpClient(apiBaseUrlProvider.CreateHandler())

@@ -1,5 +1,4 @@
 using System.Collections;
-using Microsoft.Maui.Controls.Shapes;
 
 namespace HexMaster.FloodRush.Game.Controls;
 
@@ -13,7 +12,6 @@ public partial class PipeStackView : ContentView
     public PipeStackView()
     {
         InitializeComponent();
-        PipeStackViewport.SizeChanged += OnPipeStackViewportSizeChanged;
     }
 
     public IEnumerable? ItemsSource
@@ -52,10 +50,13 @@ public partial class PipeStackView : ContentView
         }
 
         await Task.WhenAll(animationTasks);
+
+        // Ensure the bottom (next-to-place) tile is always visible after the cascade.
+        await PipeStackScrollView.ScrollToAsync(0, double.MaxValue, animated: false);
     }
 
     /// <summary>
-    /// Slides the topmost stack item in from above the viewport clipping boundary.
+    /// Slides the topmost stack item in from above the viewport boundary.
     /// Call this after inserting a new pipe at the front of the items source.
     /// </summary>
     public async Task AnimateNewItemAsync(CancellationToken cancellationToken = default)
@@ -76,19 +77,9 @@ public partial class PipeStackView : ContentView
         firstChild.Scale = 0.94d;
 
         await AnimatePipeStackItemAsync(firstChild, 0, cancellationToken);
-    }
 
-    private void OnPipeStackViewportSizeChanged(object? sender, EventArgs e)
-    {
-        if (PipeStackViewport.Width <= 0d || PipeStackViewport.Height <= 0d)
-        {
-            return;
-        }
-
-        PipeStackViewport.Clip = new RectangleGeometry
-        {
-            Rect = new Rect(0d, 0d, PipeStackViewport.Width, PipeStackViewport.Height)
-        };
+        // Keep the bottom (next-to-place) tile in view after the new item drops in.
+        await PipeStackScrollView.ScrollToAsync(0, double.MaxValue, animated: false);
     }
 
     private static async Task AnimatePipeStackItemAsync(VisualElement child, uint delay, CancellationToken cancellationToken)

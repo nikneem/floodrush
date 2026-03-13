@@ -72,7 +72,10 @@ public sealed class GameplayViewModel : BaseViewModel
     private bool isFlowActive;
     private bool isReplacementPenaltyActive;
     private bool isScoreSubmitting;
+    private int? playerHighScore;
+    private int? globalHighScore;
     private LevelRevisionDto? loadedRevision;
+    private ReleasedLevelSummaryDto? loadedReleasedLevel;
     private readonly HashSet<(int X, int Y)> visitedTiles = [];
 
     /// <summary>
@@ -179,6 +182,18 @@ public sealed class GameplayViewModel : BaseViewModel
     {
         get => isScoreSubmitting;
         private set => SetField(ref isScoreSubmitting, value);
+    }
+
+    public int? PlayerHighScore
+    {
+        get => playerHighScore;
+        private set => SetField(ref playerHighScore, value);
+    }
+
+    public int? GlobalHighScore
+    {
+        get => globalHighScore;
+        private set => SetField(ref globalHighScore, value);
     }
 
     public int Score
@@ -331,17 +346,15 @@ public sealed class GameplayViewModel : BaseViewModel
 
         RetryCommand = new Command(() =>
         {
+            if (loadedReleasedLevel is null || loadedRevision is null)
+            {
+                return;
+            }
+
             CancelPreparationCountdown();
-            isFlowActive = false;
-            isReplacementPenaltyActive = false;
-            visitedTiles.Clear();
-            IsGameOver = false;
-            IsSuccess = false;
-            Score = 0;
-            RemainingPrepSeconds = FlowTimeoutSeconds;
-            IsPreStartModalVisible = HasLevelLoaded;
             RecordUserAction("retry");
-            logger.LogInformation("Restarting the pre-start flow for level {LevelId}.", LevelId);
+            logger.LogInformation("Retrying level {LevelId}.", LevelId);
+            ApplyLevel(loadedReleasedLevel, loadedRevision);
         });
 
         NextLevelCommand = new Command(async () =>
@@ -398,6 +411,9 @@ public sealed class GameplayViewModel : BaseViewModel
             localState.SetCurrentLevelId(releasedLevel.LevelId);
             loadedLevelId = releasedLevel.LevelId;
             HasLevelLoaded = true;
+
+            // Fire-and-forget: load highscores in the background while the player prepares.
+            _ = LoadHighScoresInBackgroundAsync(releasedLevel.LevelId);
 
             activity?.SetTag("level.source", source);
             activity?.SetStatus(ActivityStatusCode.Ok);
@@ -480,6 +496,7 @@ public sealed class GameplayViewModel : BaseViewModel
 
     private void ApplyLevel(ReleasedLevelSummaryDto releasedLevel, LevelRevisionDto levelRevision)
     {
+        loadedReleasedLevel = releasedLevel;
         loadedRevision = levelRevision;
         isFlowActive = false;
         isReplacementPenaltyActive = false;
@@ -494,6 +511,8 @@ public sealed class GameplayViewModel : BaseViewModel
         Score = 0;
         IsGameOver = false;
         IsSuccess = false;
+        PlayerHighScore = null;
+        GlobalHighScore = null;
         BoardWidth = levelRevision.BoardWidth;
         BoardHeight = levelRevision.BoardHeight;
 
@@ -503,6 +522,7 @@ public sealed class GameplayViewModel : BaseViewModel
             BoardTiles.Add(tile);
         }
 
+        UpcomingPipes.Clear();
         foreach (var pipe in BuildPipeStack())
         {
             UpcomingPipes.Add(pipe);
@@ -799,6 +819,12 @@ public sealed class GameplayViewModel : BaseViewModel
     // ── Pipe placement ───────────────────────────────────────────────────────────
 
     /// <summary>
+    /// Returns <see langword="true"/> when fluid has already flowed through the tile at
+    /// (<paramref name="x"/>, <paramref name="y"/>), making any new placement there illegal.
+    /// </summary>
+    public bool IsVisitedTile(int x, int y) => visitedTiles.Contains((x, y));
+
+    /// <summary>
     /// Places the next-to-place pipe from the bottom of the stack onto the tile at
     /// (<paramref name="x"/>, <paramref name="y"/>).
     /// Returns <c>true</c> when the tap was accepted.
@@ -811,7 +837,7 @@ public sealed class GameplayViewModel : BaseViewModel
     {
         penaltyAnimationStarted = false;
 
-        if (!HasLevelLoaded || isFlowActive || IsGameOver || IsSuccess ||
+        if (!HasLevelLoaded || IsGameOver || IsSuccess ||
             IsPreStartModalVisible || IsPaused || isReplacementPenaltyActive)
         {
             return false;
@@ -956,6 +982,7 @@ public sealed class GameplayViewModel : BaseViewModel
         {
             isFlowActive = false;
             IsSuccess = true;
+            localState.RecordLevelCompletion(LevelId);
             logger.LogInformation(
                 "Level {LevelId} completed successfully. Final score: {Score}.", LevelId, Score);
 
@@ -1041,6 +1068,44 @@ public sealed class GameplayViewModel : BaseViewModel
         return expected == entry
             ? (entry, fixedTile.BonusPoints, true)
             : null; // fluid arrived from the wrong side
+    }
+
+    private async Task LoadHighScoresInBackgroundAsync(string levelId)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var token = cts.Token;
+
+        await Task.WhenAll(
+            LoadPlayerHighScoreAsync(levelId, token),
+            LoadGlobalHighScoreAsync(levelId, token));
+    }
+
+    private async Task LoadPlayerHighScoreAsync(string levelId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var dto = await scoresApiService.GetPlayerBestScoreAsync(levelId, cancellationToken);
+            PlayerHighScore = dto?.Points;
+            logger.LogDebug("Player best score for level {LevelId}: {Points}.", levelId, PlayerHighScore);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Could not load player best score for level {LevelId}.", levelId);
+        }
+    }
+
+    private async Task LoadGlobalHighScoreAsync(string levelId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await scoresApiService.GetTopScoresAsync(levelId, take: 1, cancellationToken);
+            GlobalHighScore = response?.Scores.FirstOrDefault()?.Points;
+            logger.LogDebug("Global best score for level {LevelId}: {Points}.", levelId, GlobalHighScore);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Could not load global best score for level {LevelId}.", levelId);
+        }
     }
 
     private async Task SubmitCompletedLevelScoreAsync()

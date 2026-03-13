@@ -13,4 +13,9 @@ internal interface IScoresRepository
         string levelId,
         int take,
         CancellationToken cancellationToken);
+
+    ValueTask<LevelScoreDto?> GetPlayerBestScoreAsync(
+        string profileId,
+        string levelId,
+        CancellationToken cancellationToken);
 }

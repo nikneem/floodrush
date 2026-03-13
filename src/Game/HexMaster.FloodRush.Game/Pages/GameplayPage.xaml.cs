@@ -83,6 +83,11 @@ public partial class GameplayPage : ContentPage
             // Immediate placement: animate the stack right away.
             await PipeStackView.AnimateNewItemAsync();
         }
+        else if (!penaltyStarted && viewModel.IsVisitedTile(pos.X, pos.Y))
+        {
+            // Fluid already flowed through this tile – flash it red.
+            await BoardView.FlashIllegalMoveAsync(pos.X, pos.Y);
+        }
         // When penaltyStarted = true the stack animation is triggered from
         // OnPipeRemovalStarted after the 3-second penalty animation completes.
     }

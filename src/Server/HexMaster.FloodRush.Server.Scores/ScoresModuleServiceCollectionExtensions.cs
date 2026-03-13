@@ -1,5 +1,6 @@
 using HexMaster.FloodRush.Server.Abstractions.Features;
 using HexMaster.FloodRush.Server.Scores.Data;
+using HexMaster.FloodRush.Server.Scores.Features.GetPlayerBestScore;
 using HexMaster.FloodRush.Server.Scores.Features.GetTopScores;
 using HexMaster.FloodRush.Server.Scores.Features.SubmitScore;
 using HexMaster.FloodRush.Shared.Contracts.Scores;
@@ -17,6 +18,7 @@ public static class ScoresModuleServiceCollectionExtensions
         services.AddSingleton<IScoresRepository, TableScoresRepository>();
         services.AddScoped<ICommandHandler<SubmitScoreCommand, LevelScoreDto>, SubmitScoreCommandHandler>();
         services.AddScoped<IQueryHandler<GetTopScoresQuery, TopScoresResponse>, GetTopScoresQueryHandler>();
+        services.AddScoped<IQueryHandler<GetPlayerBestScoreQuery, LevelScoreDto?>, GetPlayerBestScoreQueryHandler>();
 
         return services;
     }
