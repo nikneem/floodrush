@@ -31,6 +31,7 @@ Define the core game concepts and immutable rules used by both gameplay and pers
 - Finish point
 - Fluid basin
 - Split section
+- Wall section
 
 ## Flow rules
 - Each level defines one or more start points and one or more required finish points.
