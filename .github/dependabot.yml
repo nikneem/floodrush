@@ -1,0 +1,192 @@
+# Dependabot configuration for FloodRush
+#
+# Design principles
+# -----------------
+# 1. The `directories` key groups projects that share a package family, so a
+#    single PR updates that dependency across every affected project at once.
+#
+# 2. Groups keep related packages together (e.g. all OpenTelemetry packages
+#    bump in one PR rather than one PR per package).
+#
+# 3. Aspire packages are intentionally isolated in their own entry with a
+#    low PR limit. The Aspire.AppHost.Sdk version MUST stay in sync with
+#    `aspire --version` on every developer machine, so those PRs require
+#    conscious review before merging.
+#
+# 4. Test tooling runs on a monthly cadence — it is low-risk and changes
+#    less urgently than production dependencies.
+#
+# 5. Schedule day/time is staggered across the week so the PR queue does
+#    not spike on a single day.
+
+version: 2
+
+updates:
+
+  # ── GitHub Actions ──────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Amsterdam"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # ── Aspire AppHost ──────────────────────────────────────────────────────────
+  # WARNING: Aspire.* package versions must match the installed Aspire CLI
+  # version (`aspire --version`). A version mismatch silently breaks the
+  # backchannel protocol and makes `aspire-list_resources` return nothing.
+  # Review and test locally before merging any Aspire dependency PR.
+  - package-ecosystem: "nuget"
+    directory: "src/Aspire/HexMaster.FloodRush.Aspire/HexMaster.FloodRush.Aspire.AppHost"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Amsterdam"
+    commit-message:
+      prefix: "build(apphost)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "aspire"
+    open-pull-requests-limit: 2
+    groups:
+      aspire-hosting:
+        patterns:
+          - "Aspire.*"
+
+  # ── Observability stack (ServiceDefaults + MAUI client) ────────────────────
+  # OpenTelemetry and Microsoft.Extensions packages must stay in sync between
+  # ServiceDefaults and the Game client. The two directories share one entry
+  # so updates land in a single coordinated PR.
+  - package-ecosystem: "nuget"
+    directories:
+      - "src/Aspire/HexMaster.FloodRush.Aspire/HexMaster.FloodRush.Aspire.ServiceDefaults"
+      - "src/Game/HexMaster.FloodRush.Game"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "08:00"
+      timezone: "Europe/Amsterdam"
+    commit-message:
+      prefix: "build(observability)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "observability"
+    open-pull-requests-limit: 5
+    groups:
+      opentelemetry:
+        patterns:
+          - "OpenTelemetry.*"
+        update-types:
+          - "minor"
+          - "patch"
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions.*"
+        update-types:
+          - "minor"
+          - "patch"
+      maui:
+        patterns:
+          - "Microsoft.Maui.*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── Server modules ──────────────────────────────────────────────────────────
+  # The API host and all feature modules share Azure.Data.Tables and
+  # Microsoft.AspNetCore.* packages. Grouping them ensures atomic updates so
+  # the monolith never runs mismatched authentication or storage library
+  # versions across modules.
+  - package-ecosystem: "nuget"
+    directories:
+      - "src/Server/HexMaster.FloodRush.Api"
+      - "src/Server/HexMaster.FloodRush.Server.Profiles"
+      - "src/Server/HexMaster.FloodRush.Server.Levels"
+      - "src/Server/HexMaster.FloodRush.Server.Scores"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "08:00"
+      timezone: "Europe/Amsterdam"
+    commit-message:
+      prefix: "build(server)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "server"
+    open-pull-requests-limit: 5
+    groups:
+      azure-sdk:
+        patterns:
+          - "Azure.*"
+        update-types:
+          - "minor"
+          - "patch"
+      aspnetcore:
+        patterns:
+          - "Microsoft.AspNetCore.*"
+        update-types:
+          - "minor"
+          - "patch"
+      api-tools:
+        # Scalar.AspNetCore drives the OpenAPI UI; keep it separate so it
+        # can be reviewed independently of the framework packages.
+        patterns:
+          - "Scalar.*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── Test infrastructure ─────────────────────────────────────────────────────
+  # All three test projects share the same runner, coverage, and framework
+  # packages. Monthly cadence is appropriate: test tooling is low-risk and
+  # major xUnit or Coverlet releases are rare.
+  - package-ecosystem: "nuget"
+    directories:
+      - "src/Tests/HexMaster.FloodRush.Game.Core.Tests"
+      - "src/Tests/HexMaster.FloodRush.Server.Profiles.Tests"
+      - "src/Tests/HexMaster.FloodRush.Server.Levels.Tests"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Amsterdam"
+    commit-message:
+      prefix: "test(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "testing"
+    open-pull-requests-limit: 3
+    groups:
+      xunit:
+        patterns:
+          - "xunit*"
+          - "xunit.*"
+        update-types:
+          - "minor"
+          - "patch"
+      test-infrastructure:
+        patterns:
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet.*"
+          - "Microsoft.AspNetCore.TestHost"
+          - "Microsoft.Extensions.*"
+        update-types:
+          - "minor"
+          - "patch"
