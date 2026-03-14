@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:HexMaster.FloodRush.Game.Controls"
@@ -50,10 +50,9 @@
                  </StackLayout>
 
                  <Button Grid.Column="4"
-                         Text="⏸"
-                         Style="{StaticResource SecondaryButtonStyle}"
+                         Text="Pause"
                          Padding="12,6"
-                         FontSize="18"
+                         FontSize="14"
                          Command="{Binding PauseCommand}"/>
              </Grid>
         </Border>
