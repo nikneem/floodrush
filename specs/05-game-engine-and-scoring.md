@@ -20,16 +20,57 @@ Define the deterministic runtime behavior for fluid flow, victory evaluation, an
 ## Score model
 Each traversed pipe section awards points based on tile type.
 
-Required scoring categories:
-- Horizontal score
-- Vertical score
-- Corner scores
-- Cross first traversal score
-- Cross second traversal bonus
-- Fluid basin bonus
-- Split section bonus, if the level enables it
-- Completion bonus for reaching all required finish points
-- Optional time or efficiency bonus, if later introduced by level metadata
+### Base pipe scores
+
+| Pipe type | Points per traversal | Notes |
+|-----------|---------------------|-------|
+| Horizontal | 10 | |
+| Vertical | 10 | |
+| Corner left-to-top | 12 | |
+| Corner right-to-top | 12 | |
+| Corner left-to-bottom | 12 | |
+| Corner right-to-bottom | 12 | |
+| Cross (first traversal) | 10 | Either horizontal or vertical axis |
+| Cross (second traversal) | 50 bonus | Opposite axis only; same axis does not score twice |
+
+These values are the defaults for all levels. Individual levels may define `PipeScoringOverride` entries to raise or lower any of these values.
+
+### Additional scoring categories
+
+| Category | Default value | Condition |
+|----------|--------------|-----------|
+| Fluid basin bonus | Defined per tile | Basin tile successfully traversed |
+| Split section bonus | Defined per level | Level enables it |
+| Completion bonus | 1 000 points | All required finish points reached |
+| Time / efficiency bonus | Not yet introduced | Reserved for future level metadata |
+
+Score is tracked in `ScoreBreakdown` (pipe traversal score, basin bonus, split bonus, completion bonus).
+
+## Flow duration
+
+The ViewModel calculates the animation duration for each tile traversal using:
+
+```
+durationMs = max(300, (101 − flowSpeedIndicator) × 100)
+```
+
+| Flow speed indicator | Duration per tile |
+|---------------------|------------------|
+| 1 (slowest) | 10 000 ms |
+| 50 | 5 100 ms |
+| 98 | 300 ms (floor) |
+| 100 (fastest) | 300 ms (floor) |
+
+The minimum floor of 300 ms ensures the water fill animation is always visible to the player.
+
+### Fast-forward mode
+
+The player can activate fast-forward at any time during an active level from the gameplay HUD. When enabled:
+
+- Every subsequent tile animation runs for a fixed **500 ms** regardless of the level's flow speed indicator.
+- Fast-forward is a UI-level override; it does not affect `GameSession` engine timing or score calculation.
+- Fast-forward toggles off when the player clicks the button again.
+- Fast-forward resets to off when the player retries the level.
 
 ## Failure model
 - A branch fails if fluid exits the board, reaches an invalid connection, or reaches a dead end before fulfilling the level goals.

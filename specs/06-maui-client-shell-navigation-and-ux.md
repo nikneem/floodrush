@@ -34,10 +34,64 @@ The welcome page must contain:
 
 The active gameplay screen uses a fixed three-zone landscape layout:
 
-- **HUD strip** — top bar showing level name, current score, flow speed indicator, and the pre-flow countdown timer.
+- **HUD strip** — top bar showing: level name, pre-flow countdown timer, flow speed indicator, current score, a **Fast Fwd** toggle button, and a **Pause** button.
 - **Pipe stack sidebar** — left column (~80–100 dp) showing the 10 upcoming pipe sections. The bottom item is highlighted as "next to place".
 - **Playfield viewport** — remaining width; a clipped viewport that hosts the playfield grid with fixed tiles and player-placed pipes.
 - Before countdown begins, the gameplay page shows a centered modal summarising the selected level number, difficulty, flow timeout, and flow speed indicator, with a `Start` button pinned to the bottom of the card.
+
+## HUD action buttons
+
+The HUD strip contains two interactive buttons aligned to the right:
+
+### Fast Fwd / Normal
+
+- Toggles fast-forward mode on and off.
+- Label reads **"Fast Fwd"** when off (click to enable) and **"Normal"** when on (click to return to normal speed).
+- Uses the default primary button style (amber gradient).
+- Enabled whenever a level is loaded; clicking during the prep countdown has no visible effect until flow begins.
+- Resets to off on level retry.
+- See spec 05 for the timing definition when fast-forward is active.
+
+### Pause
+
+- Pauses active gameplay and shows the pause overlay.
+- Uses the default primary button style.
+- Disabled until a level has loaded and the pre-start modal is dismissed.
+
+## Pause and result overlays
+
+### Pause overlay
+
+- Shown when the player taps **Pause** from the HUD.
+- Semi-transparent full-screen overlay with a centred card.
+- Card contains the title "Paused" and two buttons: **Resume** (returns to active gameplay) and **Quit Level** (returns to level selection).
+
+### Level failed overlay
+
+- Shown automatically when the flow fails (open pipe end or invalid connection).
+- Full-bleed background visual with semi-transparent dark veil.
+- Card shows: failure title ("Flow Leaked!"), message, the score accumulated during the run, a **Try Again** button (primary), and a **Quit to Menu** button (secondary).
+- Score shown in the failure overlay is for display only; it is not submitted to the server.
+- Tapping **Try Again** dismisses the overlay immediately and shows a loading indicator while the level resets. See the Retry loading feedback section below.
+
+### Level complete overlay
+
+- Shown automatically when all required finish points are reached.
+- Full-bleed background visual with semi-transparent dark veil.
+- Card shows: completion title ("Level Complete!"), the final score, a score submission indicator, the player's personal best, the global best score, a **Next Level** button (primary), and a **Quit to Menu** button (secondary).
+- Score submission is attempted in the background; the indicator is visible while the request is in flight.
+
+## Retry loading feedback
+
+When the player triggers **Try Again** from the level failed overlay:
+
+1. The failure overlay is dismissed immediately.
+2. A full-screen loading overlay appears over the gameplay page showing an amber spinner and the text "Resetting level…".
+3. Level tiles are rebuilt on a background thread to avoid blocking the UI.
+4. Once tiles are ready, the level is applied on the main thread in a single `Reset` notification (no per-tile rebuild).
+5. The loading overlay is dismissed and the pre-start modal appears for the fresh board.
+
+This pattern ensures the player receives immediate visual confirmation that retry is in progress.
 
 ## Pipe placement stack
 

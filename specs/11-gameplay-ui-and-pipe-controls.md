@@ -46,11 +46,27 @@ For the `Cross` type, `EntryDirection` and `ExitDirection` refer to the **active
 
 ### Flow timing
 
-- Base flow duration through any single tile: **10 seconds** at `SpeedMultiplier = 1`.
-- At `SpeedMultiplier = 100`, flow duration is **1 second**.
-- Formula: `durationMs = 10000 - ((speedMultiplier - 1) / 99.0 * 9000)` — linear scale from 10 000 ms to 1 000 ms.
+- Base flow animation duration per tile is derived from the level's `FlowSpeedIndicator` (1–100):
+
+  ```
+  durationMs = max(300, (101 − flowSpeedIndicator) × 100)
+  ```
+
+  | Flow speed indicator | Duration per tile |
+  |---------------------|------------------|
+  | 1 (slowest) | 10 000 ms |
+  | 50 | 5 100 ms |
+  | 98–100 (fastest) | 300 ms (floor) |
+
+- The 300 ms floor ensures the water fill animation is always visible to the player.
 - The water animation runs for exactly this duration, from entry edge to exit edge.
-- Speed multiplier is provided externally by the playfield; the control does not determine the game speed.
+- Flow speed indicator is provided externally by the level definition; the pipe control does not determine game speed.
+
+### Fast-forward mode
+
+- When the player activates fast-forward from the HUD, every subsequent tile animation runs for a fixed **500 ms**, overriding the formula above.
+- Fast-forward is a ViewModel-level override; individual pipe controls still receive a `DurationMs` value and are unaware of the mode.
+- See spec 05 and spec 06 for full fast-forward behaviour.
 
 ### Public API
 
@@ -191,25 +207,40 @@ Start and finish point tiles are fixed and rendered as part of the playfield gri
 ## Gameplay screen layout
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  HUD: level name │ score │ speed indicator │ timer           │
-├────────────┬─────────────────────────────────────────────────┤
-│            │                                                  │
-│  PIPE      │            PLAYFIELD VIEWPORT                   │
-│  STACK     │                                                  │
-│  (10 items)│    [zoomable / scrollable playfield grid]       │
-│            │                                                  │
-│  ↑ next 9  │                                                  │
-│            │                                                  │
-│ [→ place]  │                                                  │
-│            │                                                  │
-└────────────┴─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│  HUD: level name │ prep timer │ flow speed │ score │ [Fast Fwd] [Pause]  │
+├────────────┬─────────────────────────────────────────────────────────────┤
+│            │                                                              │
+│  PIPE      │               PLAYFIELD VIEWPORT                            │
+│  STACK     │                                                              │
+│  (10 items)│      [zoomable / scrollable playfield grid]                 │
+│            │                                                              │
+│  ↑ next 9  │                                                              │
+│            │                                                              │
+│ [→ place]  │                                                              │
+│            │                                                              │
+└────────────┴─────────────────────────────────────────────────────────────┘
 ```
 
 - HUD height: fixed, minimal (~48 dp).
 - Stack width: fixed (~180–220 dp) so each upcoming pipe preview can show both its symbol and label.
 - Grid viewport: fills remaining space; the visible region is clipped while the rendered board may be larger than the viewport.
 - The preparation countdown timer changes from yellow to orange to red as it approaches zero and blinks during the final 10 seconds.
+
+## HUD action buttons
+
+The right side of the HUD strip contains two primary-style buttons:
+
+| Button | Label (off) | Label (on) | Command |
+|--------|-------------|------------|---------|
+| Fast Fwd | "Fast Fwd" | "Normal" | `FastForwardCommand` |
+| Pause | "Pause" | — | `PauseCommand` |
+
+- Both use the default `PrimaryButtonStyle` (amber gradient).
+- **Fast Fwd** is a toggle; the label changes to "Normal" while fast-forward is active so the player knows clicking it will return to normal speed.
+- **Pause** suspends flow, the countdown timer, and the prep timer; shows the pause overlay.
+
+---
 
 ## Pre-start modal
 
@@ -241,7 +272,8 @@ When the start delay expires:
 
 - All seven pipe section types are implemented as MAUI `ContentView` controls in `src/Game/HexMaster.FloodRush.Game/Controls/Pipes/`.
 - Each control exposes `StartFlow(BoardDirection, double)`, raises `FlowStarted`, and raises `FlowCompleted`.
-- Flow duration follows the formula: `10000ms` at speed 1, `1000ms` at speed 100, linear interpolation.
+- Flow animation duration follows the formula `max(300, (101 − flowSpeedIndicator) × 100)` ms, with a minimum floor of 300 ms.
+- When fast-forward is active, each tile animation uses a fixed 500 ms duration regardless of flow speed.
 - Calling `StartFlow` sets `IsLocked = true`; locked tiles cannot be replaced.
 - `FlowStarted` event arguments include `EntryDirection` and `GridPosition`.
 - `FlowCompleted` event arguments include `ExitDirection` and `GridPosition`.
@@ -254,6 +286,12 @@ When the start delay expires:
 - The layout allocates left sidebar for the stack and the remaining width for the playfield viewport.
 - Randomized playfield tile backgrounds remain stable for a loaded board and the tile zoom cap prevents tiles from exceeding 128 × 128 pixels.
 - When the rendered board exceeds the visible area, dragging pans across the playfield in both directions.
+- The HUD strip shows: level name, prep timer, flow speed indicator, score, Fast Fwd toggle button, and Pause button.
+- Tapping **Fast Fwd** toggles fast-forward mode; the button label reflects the current state ("Fast Fwd" / "Normal").
+- Tapping **Pause** suspends gameplay and shows the pause overlay with Resume and Quit Level options.
+- Tapping **Try Again** from the level failed overlay dismisses the overlay and shows a "Resetting level…" spinner immediately, without a visible delay.
+- The level reset builds tiles on a background thread; the loading overlay stays visible until `ApplyLevel` completes on the main thread.
+- Fast-forward state resets to off when the player retries the level.
 - Code coverage for pipe control logic remains at or above 80%.
 
 ---
