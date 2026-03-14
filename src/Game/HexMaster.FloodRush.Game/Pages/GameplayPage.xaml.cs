@@ -21,6 +21,7 @@ public partial class GameplayPage : ContentPage
         this.viewModel.BeginTileFlow += OnBeginTileFlow;
         this.viewModel.PipeRemovalStarted += OnPipeRemovalStarted;
         this.viewModel.CancelCurrentTileFlow += OnCancelCurrentTileFlow;
+        this.viewModel.UnusedPipeRemovalStarted += OnUnusedPipeRemovalStarted;
         BoardView.TileFlowCompleted += OnTileFlowCompleted;
         BoardView.TileTapped += OnTileTapped;
         BindingContext = viewModel;
@@ -133,6 +134,21 @@ public partial class GameplayPage : ContentPage
             await BoardView.AnimatePipeRemovalAsync(e.X, e.Y);
             e.Complete();                           // ViewModel commits the new pipe
             await PipeStackView.AnimateNewItemAsync(); // stack slides in the replacement
+        });
+    }
+
+    // ── Unused-pipe fade-out animation (level success) ───────────────────────────
+
+    /// <summary>
+    /// Fades out all unused pipe tiles in parallel (300 ms), then tells the ViewModel
+    /// to finish the success transition and show the level-complete dialog.
+    /// </summary>
+    private async void OnUnusedPipeRemovalStarted(object? sender, UnusedPipeRemovalEventArgs e)
+    {
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            await BoardView.AnimateUnusedPipeRemovalAsync(e.Positions);
+            e.Complete();
         });
     }
 

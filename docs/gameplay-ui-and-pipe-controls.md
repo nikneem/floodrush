@@ -256,6 +256,39 @@ AdjacentPipe.StartFlow(reciprocalEntry, speedMultiplier)
 
 ---
 
+## Unused pipe penalty (spec 15)
+
+When the flow reaches the finish point and all conditions are met, the engine enters a success-resolution phase before showing the level-complete dialog.
+
+### How it works
+
+1. The session collects all player-placed pipe positions from `GameBoard.PlacedPipes`.
+2. It compares them against the set of positions that fluid actually traversed (`ScoreBreakdown.Traversals`).
+3. Any placed pipe **not** in the traversal set is **unused**.
+4. The engine sets `ScoreBreakdown.UnusedPipePenalty = –2 × count of unused pipes`.
+5. The unused positions are exposed via `GameSession.UnusedPipePositions`.
+
+### Animation
+
+Before the level-complete dialog appears, the MAUI client runs a 300 ms fade-out on every unused-pipe tile simultaneously (`Task.WhenAll`). Each fading tile also shows a transient red `–2` label. After all animations finish, unused tiles are cleared to the empty visual state and the dialog is shown.
+
+### Level-complete dialog breakdown
+
+The dialog shows an itemised score breakdown:
+
+| Row | Label | Visible when |
+|-----|-------|--------------|
+| Pipe score | `+N pts` | Always |
+| Basin bonus | `+N pts` | `BasinBonus > 0` |
+| Split bonus | `+N pts` | `SplitBonus > 0` |
+| Completion bonus | `+N pts` | Always |
+| Unused pipes | `–N pts` (red) | `UnusedPipePenalty < 0` |
+| **Total** (bold) | `N pts` | Always |
+
+The total is clamped to a minimum of 0 — a player cannot score below zero.
+
+---
+
 ## Component locations
 
 | Component | Path |

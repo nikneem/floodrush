@@ -81,6 +81,11 @@ public sealed class GameplayViewModel : BaseViewModel
     private readonly HashSet<(int X, int Y)> visitedTiles = [];
     private readonly HashSet<(int X, int Y)> mandatoryBasinPositions = [];
     private readonly HashSet<(int X, int Y)> traversedBasinPositions = [];
+    private int pipeScoreAccum;
+    private int basinBonusAccum;
+    private int splitBonusAccum;
+    private int completionBonusAccum;
+    private int unusedPipePenaltyAccum;
 
     /// <summary>
     /// Fired when the flow engine wants to animate fluid on a specific tile.
@@ -101,6 +106,13 @@ public sealed class GameplayViewModel : BaseViewModel
     /// <see cref="PipeRemovalEventArgs.Complete"/> when finished.
     /// </summary>
     public event EventHandler<PipeRemovalEventArgs>? PipeRemovalStarted;
+
+    /// <summary>
+    /// Fired when the level succeeds and there are unused pipes to animate away.
+    /// The page runs parallel 300 ms fades on the identified tiles, then calls
+    /// <see cref="UnusedPipeRemovalEventArgs.Complete"/> to finish the transition.
+    /// </summary>
+    public event EventHandler<UnusedPipeRemovalEventArgs>? UnusedPipeRemovalStarted;
 
     public BatchObservableCollection<PlayfieldTileItem> BoardTiles { get; } = [];
     public BatchObservableCollection<PipeStackItem> UpcomingPipes { get; } = [];
@@ -238,6 +250,26 @@ public sealed class GameplayViewModel : BaseViewModel
         get => score;
         set => SetField(ref score, value);
     }
+
+    // ── Score breakdown (populated on level success) ────────────────────────────
+
+    /// <summary>Points earned from player-placed pipes traversed by fluid.</summary>
+    public int ScoreBreakdownPipeScore => pipeScoreAccum;
+
+    /// <summary>Bonus points from fluid basin tiles (0 when no basins in level).</summary>
+    public int ScoreBreakdownBasinBonus => basinBonusAccum;
+
+    /// <summary>Bonus points from split section tiles (0 when no splits in level).</summary>
+    public int ScoreBreakdownSplitBonus => splitBonusAccum;
+
+    /// <summary>Flat completion bonus awarded for finishing the level (1 000 pts).</summary>
+    public int ScoreBreakdownCompletionBonus => completionBonusAccum;
+
+    /// <summary>Penalty for unused placed pipes (always ≤ 0; –2 pts per pipe).</summary>
+    public int ScoreBreakdownUnusedPipePenalty => unusedPipePenaltyAccum;
+
+    /// <summary>Final total after all bonuses and penalty, clamped to 0.</summary>
+    public int ScoreBreakdownTotal => Math.Max(0, pipeScoreAccum + basinBonusAccum + splitBonusAccum + completionBonusAccum + unusedPipePenaltyAccum);
 
     public int BoardWidth
     {
@@ -584,6 +616,11 @@ public sealed class GameplayViewModel : BaseViewModel
         visitedTiles.Clear();
         traversedBasinPositions.Clear();
         mandatoryBasinPositions.Clear();
+        pipeScoreAccum = 0;
+        basinBonusAccum = 0;
+        splitBonusAccum = 0;
+        completionBonusAccum = 0;
+        unusedPipePenaltyAccum = 0;
         mandatoryBasinPositions.UnionWith(
             (levelRevision.FixedTiles ?? [])
                 .Where(t => t.TileType == LevelFixedTileTypeDto.FluidBasin && t.IsMandatory)
@@ -1065,6 +1102,15 @@ public sealed class GameplayViewModel : BaseViewModel
         visitedTiles.Add((e.X, e.Y));
         Score += e.PointsEarned;
 
+        // Route points to the correct breakdown bucket based on tile kind.
+        var completedTile = BoardTiles.FirstOrDefault(t => t.X == e.X && t.Y == e.Y);
+        if (completedTile?.Kind == PlayfieldTileKind.FluidBasin)
+            basinBonusAccum += e.PointsEarned;
+        else if (completedTile?.Kind == PlayfieldTileKind.SplitSection)
+            splitBonusAccum += e.PointsEarned;
+        else
+            pipeScoreAccum += e.PointsEarned;
+
         if (e.IsTerminal)
         {
             isFlowActive = false;
@@ -1074,14 +1120,35 @@ public sealed class GameplayViewModel : BaseViewModel
                 return;
             }
 
-            IsSuccess = true;
-            localState.RecordLevelCompletion(LevelId);
-            logger.LogInformation(
-                "Level {LevelId} completed successfully. Final score: {Score}.", LevelId, Score);
+            // Apply completion bonus and identify unused pipes for penalty/animation.
+            completionBonusAccum = 1000;
+            Score += completionBonusAccum;
 
-            // Fire-and-forget: submit the score to the server in the background.
-            // The overlay is shown immediately; IsScoreSubmitting drives a small indicator.
-            _ = SubmitCompletedLevelScoreAsync();
+            var unusedPipes = BoardTiles
+                .Where(t => t.PlacedPipeType != null && !visitedTiles.Contains((t.X, t.Y)))
+                .Select(t => (t.X, t.Y))
+                .ToList();
+
+            unusedPipePenaltyAccum = -2 * unusedPipes.Count;
+            Score = Math.Max(0, Score + unusedPipePenaltyAccum);
+
+            OnPropertyChanged(nameof(ScoreBreakdownPipeScore));
+            OnPropertyChanged(nameof(ScoreBreakdownBasinBonus));
+            OnPropertyChanged(nameof(ScoreBreakdownSplitBonus));
+            OnPropertyChanged(nameof(ScoreBreakdownCompletionBonus));
+            OnPropertyChanged(nameof(ScoreBreakdownUnusedPipePenalty));
+            OnPropertyChanged(nameof(ScoreBreakdownTotal));
+
+            if (unusedPipes.Count > 0)
+            {
+                // Animate away unused pipes before showing the dialog.
+                UnusedPipeRemovalStarted?.Invoke(this,
+                    new UnusedPipeRemovalEventArgs(unusedPipes, CompleteSuccessTransition));
+            }
+            else
+            {
+                CompleteSuccessTransition();
+            }
             return;
         }
 
@@ -1253,6 +1320,34 @@ public sealed class GameplayViewModel : BaseViewModel
         {
             IsScoreSubmitting = false;
         }
+    }
+
+    /// <summary>
+    /// Called once all unused-pipe removal animations have completed (or immediately if
+    /// there are no unused pipes). Clears removed tiles, shows the level-complete overlay,
+    /// and kicks off background server operations.
+    /// </summary>
+    private void CompleteSuccessTransition()
+    {
+        // Clear unused-pipe visuals in BoardTiles.
+        var toRemove = BoardTiles
+            .Where(t => t.PlacedPipeType != null && !visitedTiles.Contains((t.X, t.Y)))
+            .ToList();
+        foreach (var tile in toRemove)
+        {
+            var idx = BoardTiles.IndexOf(tile);
+            if (idx >= 0)
+                BoardTiles[idx] = tile with { PipeOverlayImage = string.Empty, PlacedPipeType = null };
+        }
+
+        IsSuccess = true;
+        localState.RecordLevelCompletion(LevelId);
+        logger.LogInformation(
+            "Level {LevelId} completed. Score={Score}, Penalty={Penalty}.",
+            LevelId, Score, unusedPipePenaltyAccum);
+
+        // Fire-and-forget: submit score to the server in the background.
+        _ = SubmitCompletedLevelScoreAsync();
     }
 
     private void EndFlowFailed()

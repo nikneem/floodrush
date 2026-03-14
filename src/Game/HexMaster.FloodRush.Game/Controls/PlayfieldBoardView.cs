@@ -265,6 +265,20 @@ public sealed class PlayfieldBoardView : ContentView
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Fades out all unused-pipe tiles at the given positions simultaneously (300 ms).
+    /// Must be called on the UI thread.
+    /// </summary>
+    public Task AnimateUnusedPipeRemovalAsync(IEnumerable<(int X, int Y)> positions)
+    {
+        var tasks = positions
+            .Where(p => tileViews.ContainsKey(p))
+            .Select(p => tileViews[p].AnimateUnusedRemovalAsync())
+            .ToList();
+
+        return tasks.Count > 0 ? Task.WhenAll(tasks) : Task.CompletedTask;
+    }
+
     private double CalculateBoardAxisLength(int cellCount) =>
         (Math.Max(0, cellCount) * TileSize) +
         (Math.Max(0, cellCount - 1) * TileSpacing) +

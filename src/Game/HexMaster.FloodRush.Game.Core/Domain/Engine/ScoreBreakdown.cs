@@ -12,6 +12,7 @@ public sealed class ScoreBreakdown
     private int basinBonus;
     private int splitBonus;
     private int completionBonus;
+    private int unusedPipePenalty;
 
     /// <summary>Sum of all points earned from traversing player-placed pipes.</summary>
     public int PipeScore => traversals.Sum(t => t.PointsAwarded);
@@ -25,8 +26,14 @@ public sealed class ScoreBreakdown
     /// <summary>Bonus awarded when all required finish points are reached.</summary>
     public int CompletionBonus => completionBonus;
 
-    /// <summary>Grand total of all score components.</summary>
-    public int Total => PipeScore + BasinBonus + SplitBonus + CompletionBonus;
+    /// <summary>
+    /// Penalty deducted for placed pipes that fluid never traversed (always ≤ 0).
+    /// Equals –2 per unused pipe.
+    /// </summary>
+    public int UnusedPipePenalty => unusedPipePenalty;
+
+    /// <summary>Grand total of all score components, clamped to a minimum of 0.</summary>
+    public int Total => Math.Max(0, PipeScore + BasinBonus + SplitBonus + CompletionBonus + UnusedPipePenalty);
 
     /// <summary>Individual pipe traversal records in traversal order.</summary>
     public IReadOnlyCollection<TraversalRecord> Traversals => traversals.AsReadOnly();
@@ -35,4 +42,5 @@ public sealed class ScoreBreakdown
     internal void AddBasinBonus(int points) => basinBonus += points;
     internal void AddSplitBonus(int points) => splitBonus += points;
     internal void SetCompletionBonus(int points) => completionBonus = points;
+    internal void SetUnusedPipePenalty(int penalty) => unusedPipePenalty = Math.Min(0, penalty);
 }

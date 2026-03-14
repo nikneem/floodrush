@@ -543,4 +543,34 @@ public sealed class PlayfieldTileView : ContentView
 
         illegalFlash.IsVisible = false;
     }
+
+    /// <summary>
+    /// Fades out an unused pipe in 300 ms (CubicIn) while showing a red "–2" penalty label.
+    /// After the animation the pipe overlay is hidden and the tile is ready for
+    /// an empty visual state update from the ViewModel.
+    /// </summary>
+    public async Task AnimateUnusedRemovalAsync()
+    {
+        if (!pipeOverlayImage.IsVisible) return;
+
+        var size = TileSize;
+        pointsLabel.Text = "–2";
+        pointsLabel.FontSize = Math.Max(10d, size * 0.22);
+        pointsLabel.TextColor = Color.FromArgb("#e74c3c");
+        pointsLabel.Opacity = 1;
+        pointsLabel.Scale = 1;
+        pointsLabel.TranslationY = 0;
+        pointsLabel.IsVisible = true;
+
+        // Fade pipe and penalty label together over 300 ms.
+        await Task.WhenAll(
+            pipeOverlayImage.FadeTo(0, 300, Easing.CubicIn),
+            pointsLabel.FadeTo(0, 300, Easing.CubicIn));
+
+        pipeOverlayImage.IsVisible = false;
+        pipeOverlayImage.Opacity = 1;
+        pointsLabel.IsVisible = false;
+        pointsLabel.Opacity = 1;
+        pointsLabel.TextColor = Color.FromArgb("#ffc55a"); // restore default amber
+    }
 }

@@ -31,6 +31,7 @@ public sealed class GameSession
     private readonly List<FlowBranch> branches = [];
     private readonly int completionBonusPoints;
     private long startDelayRemainingMs;
+    private IReadOnlyCollection<GridPosition> unusedPipePositions = [];
 
     public GameSession(LevelDefinition level, int completionBonusPoints = 1000)
     {
@@ -53,6 +54,12 @@ public sealed class GameSession
 
     /// <summary>Finish-point positions that have been reached so far.</summary>
     public IReadOnlyCollection<GridPosition> ReachedFinishPoints => reachedFinishPoints;
+
+    /// <summary>
+    /// Positions of player-placed pipes that fluid never traversed.
+    /// Populated only after the session reaches <see cref="GamePhase.Succeeded"/>.
+    /// </summary>
+    public IReadOnlyCollection<GridPosition> UnusedPipePositions => unusedPipePositions;
 
     // ── Phase transitions ────────────────────────────────────────────────────
 
@@ -385,6 +392,15 @@ public sealed class GameSession
             mandatoryBasinPositions.All(traversedFixedTiles.Contains))
         {
             Score.SetCompletionBonus(completionBonusPoints);
+
+            // Identify placed pipes that fluid never passed through.
+            var traversedPositions = traversedAxesByPosition.Keys.ToHashSet();
+            var unused = Board.PlacedPipes.Keys
+                .Where(p => !traversedPositions.Contains(p))
+                .ToList();
+            unusedPipePositions = unused;
+            Score.SetUnusedPipePenalty(-2 * unused.Count);
+
             Phase = GamePhase.Succeeded;
             return;
         }

@@ -50,6 +50,96 @@
                     </Label>
                 </VerticalStackLayout>
 
+                <!-- Score breakdown -->
+                <Grid ColumnDefinitions="*,Auto"
+                      RowSpacing="4"
+                      ColumnSpacing="12">
+
+                    <!-- Pipe score -->
+                    <Label Grid.Row="0" Grid.Column="0"
+                           Text="Pipe score"
+                           Style="{StaticResource MutedTextStyle}"/>
+                    <Label Grid.Row="0" Grid.Column="1"
+                           Text="{Binding ScoreBreakdownPipeScore, StringFormat='+{0} pts'}"
+                           FontFamily="PatrickHand"
+                           FontSize="16"
+                           TextColor="{StaticResource TextPrimary}"
+                           HorizontalTextAlignment="End"/>
+
+                    <!-- Basin bonus (hidden when 0) -->
+                    <Label Grid.Row="1" Grid.Column="0"
+                           Text="Basin bonus"
+                           Style="{StaticResource MutedTextStyle}"
+                           IsVisible="{Binding ScoreBreakdownBasinBonus, Converter={StaticResource IsNotZeroConverter}}"/>
+                    <Label Grid.Row="1" Grid.Column="1"
+                           Text="{Binding ScoreBreakdownBasinBonus, StringFormat='+{0} pts'}"
+                           FontFamily="PatrickHand"
+                           FontSize="16"
+                           TextColor="{StaticResource Success}"
+                           HorizontalTextAlignment="End"
+                           IsVisible="{Binding ScoreBreakdownBasinBonus, Converter={StaticResource IsNotZeroConverter}}"/>
+
+                    <!-- Split bonus (hidden when 0) -->
+                    <Label Grid.Row="2" Grid.Column="0"
+                           Text="Split bonus"
+                           Style="{StaticResource MutedTextStyle}"
+                           IsVisible="{Binding ScoreBreakdownSplitBonus, Converter={StaticResource IsNotZeroConverter}}"/>
+                    <Label Grid.Row="2" Grid.Column="1"
+                           Text="{Binding ScoreBreakdownSplitBonus, StringFormat='+{0} pts'}"
+                           FontFamily="PatrickHand"
+                           FontSize="16"
+                           TextColor="{StaticResource Success}"
+                           HorizontalTextAlignment="End"
+                           IsVisible="{Binding ScoreBreakdownSplitBonus, Converter={StaticResource IsNotZeroConverter}}"/>
+
+                    <!-- Completion bonus -->
+                    <Label Grid.Row="3" Grid.Column="0"
+                           Text="Completion bonus"
+                           Style="{StaticResource MutedTextStyle}"/>
+                    <Label Grid.Row="3" Grid.Column="1"
+                           Text="{Binding ScoreBreakdownCompletionBonus, StringFormat='+{0} pts'}"
+                           FontFamily="PatrickHand"
+                           FontSize="16"
+                           TextColor="{StaticResource Success}"
+                           HorizontalTextAlignment="End"/>
+
+                    <!-- Unused pipe penalty (hidden when 0, red) -->
+                    <Label Grid.Row="4" Grid.Column="0"
+                           Text="Unused pipes"
+                           Style="{StaticResource MutedTextStyle}"
+                           TextColor="{StaticResource Danger}"
+                           IsVisible="{Binding ScoreBreakdownUnusedPipePenalty, Converter={StaticResource IsNotZeroConverter}}"/>
+                    <Label Grid.Row="4" Grid.Column="1"
+                           Text="{Binding ScoreBreakdownUnusedPipePenalty, StringFormat='{0} pts'}"
+                           FontFamily="PatrickHand"
+                           FontSize="16"
+                           TextColor="{StaticResource Danger}"
+                           HorizontalTextAlignment="End"
+                           IsVisible="{Binding ScoreBreakdownUnusedPipePenalty, Converter={StaticResource IsNotZeroConverter}}"/>
+
+                    <!-- Divider -->
+                    <BoxView Grid.Row="5" Grid.ColumnSpan="2"
+                             Color="{StaticResource SurfaceSecondary}"
+                             HeightRequest="1"
+                             Margin="0,4"/>
+
+                    <!-- Total -->
+                    <Label Grid.Row="6" Grid.Column="0"
+                           Text="Total"
+                           FontFamily="PatrickHand"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource TextPrimary}"/>
+                    <Label Grid.Row="6" Grid.Column="1"
+                           Text="{Binding ScoreBreakdownTotal, StringFormat='{0} pts'}"
+                           FontFamily="PatrickHand"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource BrandAmber}"
+                           HorizontalTextAlignment="End"/>
+
+                </Grid>
+
                 <!-- Score-submission indicator -->
                 <StackLayout Orientation="Horizontal"
                              HorizontalOptions="Center"
