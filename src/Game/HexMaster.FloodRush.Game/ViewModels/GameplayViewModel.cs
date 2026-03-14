@@ -93,8 +93,8 @@ public sealed class GameplayViewModel : BaseViewModel
     /// </summary>
     public event EventHandler<PipeRemovalEventArgs>? PipeRemovalStarted;
 
-    public ObservableCollection<PlayfieldTileItem> BoardTiles { get; } = [];
-    public ObservableCollection<PipeStackItem> UpcomingPipes { get; } = [];
+    public BatchObservableCollection<PlayfieldTileItem> BoardTiles { get; } = [];
+    public BatchObservableCollection<PipeStackItem> UpcomingPipes { get; } = [];
 
     public string LevelId
     {
@@ -369,10 +369,12 @@ public sealed class GameplayViewModel : BaseViewModel
             RecordUserAction("retry");
             logger.LogInformation("Retrying level {LevelId}.", LevelId);
 
-            // Yield so the UI can render the loading overlay before the synchronous reset runs.
-            await Task.Yield();
-
-            ApplyLevel(loadedReleasedLevel, loadedRevision);
+            // Build tile data on a background thread so the "Resetting level..." overlay
+            // stays visible and responsive. The final ApplyLevel call (which fires one
+            // Reset notification) happens back on the main thread.
+            var captured = (loadedReleasedLevel, loadedRevision);
+            var prebuiltTiles = await Task.Run(() => BuildTiles(captured.loadedRevision));
+            ApplyLevel(captured.loadedReleasedLevel, captured.loadedRevision, prebuiltTiles);
         });
 
         NextLevelCommand = new Command(async () =>
@@ -427,7 +429,11 @@ public sealed class GameplayViewModel : BaseViewModel
         {
             var (releasedLevel, levelRevision, source) = await ResolveLevelAsync(cancellationToken);
 
-            ApplyLevel(releasedLevel, levelRevision);
+            // Build the tile list on a background thread — it is pure in-memory work with no UI
+            // dependencies. ApplyLevel then fires one Reset notification on the calling thread
+            // (which is the main thread via MAUI's synchronization context after the await).
+            var prebuiltTiles = await Task.Run(() => BuildTiles(levelRevision), cancellationToken);
+            ApplyLevel(releasedLevel, levelRevision, prebuiltTiles);
 
             localState.SetCurrentLevelId(releasedLevel.LevelId);
             loadedLevelId = releasedLevel.LevelId;
@@ -525,6 +531,12 @@ public sealed class GameplayViewModel : BaseViewModel
     }
 
     private void ApplyLevel(ReleasedLevelSummaryDto releasedLevel, LevelRevisionDto levelRevision)
+        => ApplyLevel(releasedLevel, levelRevision, BuildTiles(levelRevision));
+
+    private void ApplyLevel(
+        ReleasedLevelSummaryDto releasedLevel,
+        LevelRevisionDto levelRevision,
+        IReadOnlyCollection<PlayfieldTileItem> prebuiltTiles)
     {
         loadedReleasedLevel = releasedLevel;
         loadedRevision = levelRevision;
@@ -546,17 +558,11 @@ public sealed class GameplayViewModel : BaseViewModel
         BoardWidth = levelRevision.BoardWidth;
         BoardHeight = levelRevision.BoardHeight;
 
-        BoardTiles.Clear();
-        foreach (var tile in BuildTiles(levelRevision))
-        {
-            BoardTiles.Add(tile);
-        }
-
-        UpcomingPipes.Clear();
-        foreach (var pipe in BuildPipeStack())
-        {
-            UpcomingPipes.Add(pipe);
-        }
+        // ResetTo fires exactly ONE CollectionChanged(Reset) instead of one Add per tile.
+        // Without this, PlayfieldBoardView.Rebuild() was called N times for N tiles,
+        // creating an O(N²) rebuild cascade that could take 15+ minutes on large boards.
+        BoardTiles.ResetTo(prebuiltTiles);
+        UpcomingPipes.ResetTo(BuildPipeStack());
 
         PipeStackAnimationVersion++;
     }
