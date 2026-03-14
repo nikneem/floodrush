@@ -14,7 +14,7 @@
             <Border Grid.Row="0"
                     Background="{StaticResource SurfaceBackgroundBrush}"
                     Padding="16,8">
-             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
                  <Label Grid.Column="0"
                        Text="{Binding LevelDisplayName}"
                        Style="{StaticResource SectionHeadingStyle}"
@@ -50,6 +50,13 @@
                  </StackLayout>
 
                  <Button Grid.Column="4"
+                         Text="{Binding FastForwardButtonText}"
+                         Padding="12,6"
+                         FontSize="14"
+                         Margin="0,0,8,0"
+                         Command="{Binding FastForwardCommand}"/>
+
+                 <Button Grid.Column="5"
                          Text="Pause"
                          Padding="12,6"
                          FontSize="14"

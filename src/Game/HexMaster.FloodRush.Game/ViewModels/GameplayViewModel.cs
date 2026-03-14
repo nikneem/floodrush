@@ -54,6 +54,7 @@ public sealed class GameplayViewModel : BaseViewModel
     private string difficulty = string.Empty;
     private string loadErrorMessage = string.Empty;
     private bool isPaused;
+    private bool isFastForward;
     private bool isGameOver;
     private bool isSuccess;
     private bool isLevelLoaded;
@@ -162,6 +163,18 @@ public sealed class GameplayViewModel : BaseViewModel
         get => isPaused;
         set => SetField(ref isPaused, value);
     }
+
+    public bool IsFastForward
+    {
+        get => isFastForward;
+        set
+        {
+            if (SetField(ref isFastForward, value))
+                OnPropertyChanged(nameof(FastForwardButtonText));
+        }
+    }
+
+    public string FastForwardButtonText => IsFastForward ? "Normal" : "Fast Fwd";
 
     public bool IsGameOver
     {
@@ -308,6 +321,7 @@ public sealed class GameplayViewModel : BaseViewModel
 
     public Command PauseCommand { get; }
     public Command ResumeCommand { get; }
+    public Command FastForwardCommand { get; }
     public Command QuitCommand { get; }
     public Command RetryCommand { get; }
     public Command NextLevelCommand { get; }
@@ -347,6 +361,18 @@ public sealed class GameplayViewModel : BaseViewModel
             logger.LogInformation("Resumed gameplay for level {LevelId}.", LevelId);
         });
 
+        FastForwardCommand = new Command(() =>
+        {
+            if (HasLevelLoaded)
+            {
+                IsFastForward = !IsFastForward;
+                RecordUserAction(IsFastForward ? "fast-forward-on" : "fast-forward-off");
+                logger.LogInformation(
+                    "Fast forward {State} for level {LevelId}.",
+                    IsFastForward ? "enabled" : "disabled", LevelId);
+            }
+        });
+
         QuitCommand = new Command(async () =>
         {
             CancelPreparationCountdown();
@@ -365,6 +391,7 @@ public sealed class GameplayViewModel : BaseViewModel
 
             CancelPreparationCountdown();
             IsGameOver = false;
+            IsFastForward = false;
             IsRetrying = true;
             RecordUserAction("retry");
             logger.LogInformation("Retrying level {LevelId}.", LevelId);
@@ -1184,7 +1211,7 @@ public sealed class GameplayViewModel : BaseViewModel
     }
 
     private int CalculateFlowDuration() =>
-        Math.Max(300, (101 - FlowSpeedIndicator) * 100);
+        IsFastForward ? 500 : Math.Max(300, (101 - FlowSpeedIndicator) * 100);
 
     private static (int x, int y) GetAdjacentPosition(int x, int y, BoardDirection direction) =>
         direction switch
