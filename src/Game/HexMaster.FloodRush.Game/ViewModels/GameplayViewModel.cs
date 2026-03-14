@@ -742,7 +742,7 @@ public sealed class GameplayViewModel : BaseViewModel
                         backgroundImage,
                         GetTileTitle(fixedTile.TileType),
                         GetTileSubtitle(fixedTile),
-                        GetTileOverlayImage(fixedTile.TileType),
+                        GetTileOverlayImage(fixedTile),
                         GetTileImageRotation(fixedTile)));
                 }
                 else
