@@ -89,6 +89,12 @@ public sealed class GameplayViewModel : BaseViewModel
     public event EventHandler<BeginTileFlowEventArgs>? BeginTileFlow;
 
     /// <summary>
+    /// Fired when fast-forward is toggled on while flow is active. Handlers should
+    /// cancel any in-progress tile animation so the next tile starts at fast speed.
+    /// </summary>
+    public event EventHandler? CancelCurrentTileFlow;
+
+    /// <summary>
     /// Fired when the player taps an occupied tile and the 3-second removal
     /// penalty animation must play before the new pipe is committed.
     /// The handler is responsible for running the animation and calling
@@ -172,7 +178,11 @@ public sealed class GameplayViewModel : BaseViewModel
         set
         {
             if (SetField(ref isFastForward, value))
+            {
                 OnPropertyChanged(nameof(FastForwardButtonText));
+                if (isFastForward && isFlowActive)
+                    CancelCurrentTileFlow?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 

@@ -209,6 +209,16 @@ public sealed class PlayfieldBoardView : ContentView
         TileFlowCompleted?.Invoke(this, e);
 
     /// <summary>
+    /// Cancels any in-flight fluid animation on every tile so the next tile
+    /// can start immediately at the new (e.g. fast-forward) speed.
+    /// </summary>
+    public void CancelCurrentFlowAnimation()
+    {
+        foreach (var view in tileViews.Values)
+            view.CancelCurrentFlow();
+    }
+
+    /// <summary>
     /// Triggers a fluid-flow animation on the tile at the given position.
     /// Returns immediately if no tile view exists at that position.
     /// </summary>

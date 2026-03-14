@@ -20,6 +20,7 @@ public partial class GameplayPage : ContentPage
         this.viewModel.PropertyChanged += OnViewModelPropertyChanged;
         this.viewModel.BeginTileFlow += OnBeginTileFlow;
         this.viewModel.PipeRemovalStarted += OnPipeRemovalStarted;
+        this.viewModel.CancelCurrentTileFlow += OnCancelCurrentTileFlow;
         BoardView.TileFlowCompleted += OnTileFlowCompleted;
         BoardView.TileTapped += OnTileTapped;
         BindingContext = viewModel;
@@ -142,6 +143,12 @@ public partial class GameplayPage : ContentPage
         // Animations must run on the UI thread. BeginTileFlow may fire from a
         // background thread (countdown task), so we always marshal here.
         MainThread.BeginInvokeOnMainThread(async () => await BoardView.AnimateTileFlowAsync(e));
+    }
+
+    private void OnCancelCurrentTileFlow(object? sender, EventArgs e)
+    {
+        // Cancel the in-progress tile animation so fast-forward takes effect immediately.
+        MainThread.BeginInvokeOnMainThread(() => BoardView.CancelCurrentFlowAnimation());
     }
 
     private void OnTileFlowCompleted(object? sender, TileFlowCompletedEventArgs e)

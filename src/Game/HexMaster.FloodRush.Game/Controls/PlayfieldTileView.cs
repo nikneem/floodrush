@@ -34,6 +34,9 @@ public sealed class PlayfieldTileView : ContentView
     private readonly Label pointsLabel;
     private readonly BoxView illegalFlash;
 
+    // Allows in-flight fluid animations to be cancelled when fast-forward is toggled.
+    private CancellationTokenSource? currentFlowCts;
+
     public event EventHandler<TileFlowCompletedEventArgs>? FlowCompleted;
 
     public PlayfieldTileView()
@@ -106,7 +109,7 @@ public sealed class PlayfieldTileView : ContentView
             Stroke = new SolidColorBrush(GetColor("FluidWater")),
             StrokeLineCap = PenLineCap.Round,
             StrokeLineJoin = PenLineJoin.Round,
-            Fill = null,
+            Fill = new SolidColorBrush(GetColor("FluidWater")),
             HorizontalOptions = LayoutOptions.Fill,
             VerticalOptions = LayoutOptions.Fill
         };
@@ -209,7 +212,7 @@ public sealed class PlayfieldTileView : ContentView
 
         // Reset water fill and fluid line whenever tile data changes.
         pipeFloodFill.IsVisible = false;
-        pipeFloodFill.Opacity = 0;
+        pipeFloodFill.Opacity = .7;
         this.AbortAnimation("FluidPath");
         fluidPath.IsVisible = false;
         fluidPath.Data = null;
@@ -303,6 +306,17 @@ public sealed class PlayfieldTileView : ContentView
     /// the next tile can start immediately, giving a seamless continuous flow effect.
     /// The "+points" pop-up plays in the background after that.
     /// </summary>
+    /// <summary>
+    /// Cancels any in-flight fluid animation for this tile so the next animation
+    /// can start immediately (used when fast-forward is toggled mid-flow).
+    /// </summary>
+    public void CancelCurrentFlow()
+    {
+        currentFlowCts?.Cancel();
+        currentFlowCts?.Dispose();
+        currentFlowCts = null;
+    }
+
     public async Task BeginFlowAsync(
         BoardDirection entryDirection,
         BoardDirection exitDirection,
@@ -310,6 +324,11 @@ public sealed class PlayfieldTileView : ContentView
         int durationMs,
         bool isTerminal = false)
     {
+        // Cancel any previous animation for this tile (e.g. fast-forward toggle).
+        currentFlowCts?.Cancel();
+        currentFlowCts?.Dispose();
+        var cts = currentFlowCts = new CancellationTokenSource();
+
         var size = TileSize > 0 ? TileSize : 64d;
 
         var pathLength = EstimatePathLength(entryDirection, exitDirection, size, isTerminal);
@@ -323,7 +342,10 @@ public sealed class PlayfieldTileView : ContentView
         fluidPath.StrokeDashOffset = pathLength;
         fluidPath.IsVisible = true;
 
-        await AnimateFluidPathAsync(pathLength, animDuration);
+        await AnimateFluidPathAsync(pathLength, animDuration, cts.Token);
+
+        // Ensure the path is fully drawn whether the animation completed or was cancelled.
+        fluidPath.StrokeDashOffset = 0;
 
         // Signal the next tile immediately – the line is fully drawn and the pipe
         // looks filled, so there is no visual reason to wait for the points popup.
@@ -421,9 +443,16 @@ public sealed class PlayfieldTileView : ContentView
         return new Point(x, y);
     }
 
-    private Task AnimateFluidPathAsync(double pathLength, int durationMs)
+    private Task AnimateFluidPathAsync(double pathLength, int durationMs, CancellationToken ct = default)
     {
         var tcs = new TaskCompletionSource<bool>();
+        // When the token is cancelled (e.g. fast-forward toggle), abort the animation so
+        // the tcs completes and BeginFlowAsync can snap to fully-drawn and fire FlowCompleted.
+        ct.Register(() =>
+        {
+            this.AbortAnimation("FluidPath");
+            tcs.TrySetResult(false);
+        });
         this.Animate(
             "FluidPath",
             v => fluidPath.StrokeDashOffset = v,
