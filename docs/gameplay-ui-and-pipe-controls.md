@@ -164,6 +164,7 @@ Each board cell is its own MAUI tile control, so the level-defined row and colum
 | Fixed tile | No | Fixed tile control |
 | Start point | No | Start tile with exit-direction arrow |
 | Finish point | No | Finish tile with required-entry indicator |
+| Wall | No | Wall image (`wall_section.png`), full-cell fill |
 
 ### Tap-to-place flow
 
@@ -219,6 +220,14 @@ The card's bottom-aligned **Start** button dismisses the preview and begins the 
 - Creates two downstream flow branches when reached.
 - Applies its `SpeedModifierPercent` to all downstream segments.
 
+### Wall section
+
+- Rendered with a square wall icon (`wall_section.png`), filling the entire cell.
+- **Not tappable** — the player cannot place pipes on wall cells.
+- **Flow cannot enter a wall cell.** Any branch that attempts to enter a wall cell is immediately marked `Failed`.
+- The level validation (BFS reachability) will reject any level where wall placement makes a finish point unreachable from all start points.
+- Wall tiles have no bonus points and no flow-time modifier.
+
 ---
 
 ## Flow event chain
@@ -243,6 +252,7 @@ AdjacentPipe.StartFlow(reciprocalEntry, speedMultiplier)
 - **Invalid connection / board edge** → `GameSession.Failed`
 - **Basin tile** → delay next `StartFlow` by `FillDelayMilliseconds`
 - **Split tile** → call `StartFlow` on both exit directions simultaneously (two branches)
+- **Wall tile** → branch immediately marked `Failed`
 
 ---
 

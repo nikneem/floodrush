@@ -90,6 +90,10 @@ public sealed class BuiltInLevelsCatalog
                 SecondaryOutputDirection: MapDirection(splitSection.SecondaryExitDirection),
                 SpeedModifierPercent: splitSection.SpeedModifierPercent,
                 BonusPoints: splitSection.BonusPoints),
+            WallTile wall => new LevelFixedTileDto(
+                LevelFixedTileTypeDto.Wall,
+                wall.Position.X,
+                wall.Position.Y),
             _ => throw new InvalidOperationException($"Unsupported fixed tile type '{tile.GetType().Name}'.")
         };
 

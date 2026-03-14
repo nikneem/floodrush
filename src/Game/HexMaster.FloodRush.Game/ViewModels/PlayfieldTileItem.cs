@@ -8,7 +8,8 @@ public enum PlayfieldTileKind
     StartPoint = 1,
     FinishPoint = 2,
     FluidBasin = 3,
-    SplitSection = 4
+    SplitSection = 4,
+    Wall = 5
 }
 
 public sealed record PlayfieldTileItem(

@@ -13,7 +13,7 @@ A `LevelDefinition` is the core game-playable description of a level. It encapsu
 | `BoardDimensions` | `BoardDimensions` | Width × height of the tile grid. |
 | `StartDelayMilliseconds` | `int` | Milliseconds before fluid begins flowing after the level starts. |
 | `FlowSpeedIndicator` | `FlowSpeedIndicator` | A 1–100 value controlling fluid flow speed. |
-| `FixedTiles` | `IReadOnlyCollection<FixedTile>` | Pre-placed tiles (start, finish, basin, split). |
+| `FixedTiles` | `IReadOnlyCollection<FixedTile>` | Pre-placed tiles (start, finish, basin, split, wall). |
 | `InventoryRules` | `IReadOnlyCollection<PipeInventoryRule>` | Per-type placement limits; empty means all types are unlimited. |
 | `ScoringOverrides` | `IReadOnlyCollection<PipeScoringOverride>` | Per-level point adjustments; empty means default scoring applies. |
 
@@ -78,13 +78,13 @@ The API ships with six built-in released levels for local development and testin
 | Level ID | Name | Board | Difficulty | Speed |
 |---|---|---|---|---|
 | `level-001` | Level 1 - First Flow | 10 × 6 | Easy | 1 |
-| `level-002` | Level 2 - Simple Corner | 10 × 6 | Easy | 1 |
-| `level-003` | Level 3 - Crossroads | 12 × 7 | Medium | 3 |
-| `level-004` | Level 4 - The Long Way | 12 × 7 | Medium | 3 |
-| `level-005` | Level 5 - Basin Challenge | 14 × 8 | Hard | 3 |
-| `level-006` | Level 6 - Basin Mandatory | 14 × 8 | Hard | 3 |
+| `level-002` | Level 2 - Basic Flow | 10 × 10 | Easy | 1 |
+| `level-003` | Level 3 - Around the Wall | 10 × 10 | Easy | 1 |
+| `level-004` | Level 4 - Dual Barrier | 10 × 10 | Easy | 1 |
+| `level-005` | Level 5 - The Basin Trail | 12 × 8 | Easy | 3 |
+| `level-006` | Level 6 - Fill Before Proceed | 12 × 8 | Easy | 3 |
 
-Levels 005 and 006 introduce fluid basins. Level 006 includes a mandatory basin that the player must route flow through to successfully complete the level.
+Levels 003 and 004 introduce wall sections that block cells and force routing around them. Levels 005 and 006 introduce fluid basins. Level 006 includes a mandatory basin that the player must route flow through to successfully complete the level.
 
 The `ReleasedFrom` date of all seeded levels is set to a past date so they appear immediately in the released-level catalog.
 

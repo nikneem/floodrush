@@ -489,6 +489,74 @@ public sealed class GameSessionTests
         Assert.Contains(50, crossPoints);   // secondary bonus
     }
 
+    // ── Simulation: wall section ─────────────────────────────────────────────
+
+    [Fact]
+    public void Tick_FlowIntoWall_MarksBranchFailed()
+    {
+        // 3×2 board: Start(0,1,R), Wall(1,0), Finish(2,1,L).
+        // BFS succeeds: (0,1) → (1,1) → (2,1) finish, so the level is valid.
+        // At runtime, player routes flow upward from (1,1) via CornerLeftToTop into the wall at (1,0).
+        var level = new LevelDefinition(
+            "wall-runtime-fail",
+            "Wall Runtime Fail",
+            new BoardDimensions(3, 2),
+            0,
+            new FlowSpeedIndicator(100),
+            [
+                new StartPointTile(new GridPosition(0, 1), BoardDirection.Right),
+                new WallTile(new GridPosition(1, 0)),
+                new FinishPointTile(new GridPosition(2, 1), BoardDirection.Left)
+            ]);
+
+        var session = CreateSession(level);
+        session.StartPlacementPhase();
+        // CornerLeftToTop at (1,1): flow enters from Left, exits upward into the wall
+        session.PlacePipe(new GridPosition(1, 1), PipeSectionType.CornerLeftToTop);
+        session.StartFlow();
+
+        for (var i = 0; i < 50; i++) session.Tick(10);
+
+        Assert.Equal(GamePhase.Failed, session.Phase);
+    }
+
+    [Fact]
+    public void LevelDefinition_RejectsWallBlockingAllPaths()
+    {
+        // 3×1 board: Start(0,0,R) → Wall(1,0) → Finish(2,0,L). Single row, wall blocks the only path.
+        Assert.Throws<InvalidOperationException>(() => new LevelDefinition(
+            "wall-full-block",
+            "Wall Full Block",
+            new BoardDimensions(3, 1),
+            0,
+            new FlowSpeedIndicator(100),
+            [
+                new StartPointTile(new GridPosition(0, 0), BoardDirection.Right),
+                new WallTile(new GridPosition(1, 0)),
+                new FinishPointTile(new GridPosition(2, 0), BoardDirection.Left)
+            ]));
+    }
+
+    [Fact]
+    public void LevelDefinition_AcceptsWallThatDoesNotBlockAllPaths()
+    {
+        // 3×2 board: Start(0,1,R), Wall(1,0), Finish(2,1,L).
+        // Wall blocks the cell above (1,1) but the finish is still reachable through (1,1) → (2,1).
+        var level = new LevelDefinition(
+            "wall-partial-block",
+            "Wall Partial Block",
+            new BoardDimensions(3, 2),
+            0,
+            new FlowSpeedIndicator(100),
+            [
+                new StartPointTile(new GridPosition(0, 1), BoardDirection.Right),
+                new WallTile(new GridPosition(1, 0)),
+                new FinishPointTile(new GridPosition(2, 1), BoardDirection.Left)
+            ]);
+
+        Assert.NotNull(level);
+    }
+
     [Fact]
     public void Tick_NegativeElapsedMs_Throws()
     {

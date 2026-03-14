@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using HexMaster.FloodRush.Game.Controls;
@@ -821,6 +821,7 @@ public sealed class GameplayViewModel : BaseViewModel
             LevelFixedTileTypeDto.FinishPoint => PlayfieldTileKind.FinishPoint,
             LevelFixedTileTypeDto.FluidBasin => PlayfieldTileKind.FluidBasin,
             LevelFixedTileTypeDto.SplitSection => PlayfieldTileKind.SplitSection,
+            LevelFixedTileTypeDto.Wall => PlayfieldTileKind.Wall,
             _ => PlayfieldTileKind.Empty
         };
 
@@ -831,6 +832,7 @@ public sealed class GameplayViewModel : BaseViewModel
             LevelFixedTileTypeDto.FinishPoint => "Finish",
             LevelFixedTileTypeDto.FluidBasin => "Basin",
             LevelFixedTileTypeDto.SplitSection => "Split",
+            LevelFixedTileTypeDto.Wall => string.Empty,
             _ => string.Empty
         };
 
@@ -866,6 +868,7 @@ public sealed class GameplayViewModel : BaseViewModel
             LevelFixedTileTypeDto.FluidBasin => tile.IsMandatory
                 ? "pipe_section_bassin_mandatory.png"
                 : "pipe_section_bassin.png",
+            LevelFixedTileTypeDto.Wall => "wall_section.png",
             _ => string.Empty
         };
 

@@ -221,6 +221,9 @@ public sealed class PlayfieldTileView : ContentView
         {
             pipeOverlayImage.Source = ImageSource.FromFile(tile.PipeOverlayImage);
             pipeOverlayImage.Rotation = tile.PipeImageRotation;
+            pipeOverlayImage.Aspect = tile.Kind == PlayfieldTileKind.Wall
+                ? Aspect.AspectFill
+                : Aspect.AspectFit;
             pipeOverlayImage.IsVisible = true;
         }
         else
@@ -284,7 +287,8 @@ public sealed class PlayfieldTileView : ContentView
             PlayfieldTileKind.StartPoint or
             PlayfieldTileKind.FinishPoint or
             PlayfieldTileKind.FluidBasin or
-            PlayfieldTileKind.SplitSection => new SolidColorBrush(GetColor("White")),
+            PlayfieldTileKind.SplitSection or
+            PlayfieldTileKind.Wall => new SolidColorBrush(GetColor("White")),
             _ => new SolidColorBrush(GetColor("CardBackgroundElevated"))
         };
 
