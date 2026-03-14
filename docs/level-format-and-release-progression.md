@@ -71,20 +71,22 @@ The server is the authority for which levels are released to a profile:
 - The sync system fetches newly released levels without requiring a full data reset.
 - A successful released-level refresh should also persist the corresponding downloadable revisions locally so the player can continue into gameplay while offline.
 
-## Initial released level
+## Seeded levels
 
-The API currently includes a first built-in released level intended to bootstrap end-to-end development:
+The API ships with six built-in released levels for local development and testing. All are seeded through the `seed-basic-levels` Aspire dashboard command on the API resource.
 
-- `LevelId`: `level-001`
-- Display name: `Level 1 - First Flow`
-- Difficulty: `Easy`
-- Board size: **10 x 6**
-- Start point: first column, flowing right
-- Finish point: last column, accepting from the left
-- Pre-flow timeout: **60 seconds**
-- Flow speed indicator: **1**
+| Level ID | Name | Board | Difficulty | Speed |
+|---|---|---|---|---|
+| `level-001` | Level 1 - First Flow | 10 × 6 | Easy | 1 |
+| `level-002` | Level 2 - Simple Corner | 10 × 6 | Easy | 1 |
+| `level-003` | Level 3 - Crossroads | 12 × 7 | Medium | 3 |
+| `level-004` | Level 4 - The Long Way | 12 × 7 | Medium | 3 |
+| `level-005` | Level 5 - Basin Challenge | 14 × 8 | Hard | 3 |
+| `level-006` | Level 6 - Basin Mandatory | 14 × 8 | Hard | 3 |
 
-Both the released-level summary payload and the downloadable level revision carry this difficulty label so the MAUI client can show matching details in the level list and the gameplay start modal.
+Levels 005 and 006 introduce fluid basins. Level 006 includes a mandatory basin that the player must route flow through to successfully complete the level.
+
+The `ReleasedFrom` date of all seeded levels is set to a past date so they appear immediately in the released-level catalog.
 
 ## Local cache tracking
 

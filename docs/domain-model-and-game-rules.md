@@ -25,6 +25,7 @@ FloodRush uses pragmatic DDD for the core game domain.
 - Split sections must define one entry direction and two distinct exits.
 - Fluid basins must define distinct entry and exit directions.
 - Finish points must be theoretically reachable before a level is considered valid.
+- If a `FluidBasinTile` has `IsMandatory = true`, every mandatory basin must be visited before a session can transition to `Succeeded`. A level that reaches all finish points without visiting a mandatory basin is marked `Failed`.
 
 ## Why this matters
 The game rules need to be deterministic and easy to test. A pragmatic DDD model helps keep the rules explicit without turning the codebase into an over-engineered domain framework.

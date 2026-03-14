@@ -75,13 +75,15 @@ Integer arithmetic is used throughout to eliminate floating-point drift.
 
 ### Basin delay
 
-When flow enters a `FluidBasinTile`, the `RequiredMilliseconds` for that tile step becomes:
+When flow enters a `FluidBasinTile`, the tile takes three times the normal transit time to traverse:
 
 ```
-basinTransitMs = transitMs + basin.FillDelayMilliseconds
+basinTransitMs = transitMs * 3
 ```
 
 The basin bonus is credited immediately on entry.
+
+If a `FluidBasinTile` has `IsMandatory = true`, the session is considered `Failed` when all finish points are reached but at least one mandatory basin was never visited. This is tracked via `mandatoryBasinPositions` in `GameSession` and checked at completion time.
 
 ### Split section
 
@@ -124,12 +126,13 @@ Default base points by pipe type:
 | Type | Points |
 |------|--------|
 | Horizontal | 10 |
-| Vertical | 12 |
-| CornerLeftToTop | 14 |
-| CornerRightToTop | 15 |
-| CornerLeftToBottom | 16 |
-| CornerRightToBottom | 17 |
-| Cross | 20 |
+| Vertical | 10 |
+| CornerLeftToTop | 12 |
+| CornerRightToTop | 12 |
+| CornerLeftToBottom | 12 |
+| CornerRightToBottom | 12 |
+| Cross (first traversal) | 10 |
+| Cross (second, perpendicular traversal) | 50 (bonus) |
 
 ## Unit tests
 

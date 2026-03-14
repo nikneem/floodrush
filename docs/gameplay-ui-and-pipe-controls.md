@@ -24,7 +24,7 @@ The gameplay screen is divided into three horizontal zones:
 └────────────┴─────────────────────────────────────────────────┘
 ```
 
-- **HUD strip** — fixed height (~48 dp): level name, current score, flow speed indicator, and the pre-flow countdown.
+- **HUD strip** — fixed height (~48 dp): level name, current score, fast-forward button, pause button, and the pre-flow countdown.
 - The pre-flow countdown shifts from yellow to orange to red as it approaches zero, and it blinks during the last 10 seconds.
 - **Pipe stack sidebar** — fixed width (~180–220 dp): 10 upcoming pipe sections, stacked vertically with enough room for a readable preview label.
 - When a level loads, the current 10-item stack drops into the sidebar from above with a gravity-style settling animation.
@@ -74,53 +74,58 @@ Each of the seven placeable pipe types is a MAUI `ContentView`. All share a base
 
 ### Visual design
 
-- Pipe body rendered **semi-transparent** (opacity ~0.80) so the water animation layer below is visible through it.
-- Water fill is a separate animated layer (opacity ~0.70, blue-teal gradient) that sweeps from the entry edge to the exit edge along the pipe path.
+- Pipe PNG image rendered on top; fluid animation layer is **below** the pipe image so the pipe appears to fill from inside.
+- Fluid fill is a **46 px thick path stroke** (blue-teal) that sweeps from entry edge to exit edge using `StrokeDashOffset` animation.
 - On lock (flow started), a subtle border highlight communicates the tile is now immovable.
 
 ### Flow timing
 
-Flow duration scales linearly between speed 1 (10 000 ms) and speed 100 (1 000 ms):
+Flow animation duration scales linearly with the level's `FlowSpeedIndicator` (1–100):
 
 ```
-durationMs = 10000 - ((speedMultiplier - 1) / 99.0 × 9000)
+durationMs = Math.Max(300, (101 - flowSpeedIndicator) × 100)
 ```
 
-Speed 50 ≈ 5 455 ms. Speed 100 = 1 000 ms.
+Speed 1 ≈ 10 000 ms per tile. Speed 100 = minimum 300 ms per tile.
 
-### Control API
+When **fast-forward** is active, each tile always animates at a fixed **500 ms** regardless of the speed indicator. Enabling fast-forward mid-tile immediately cancels the current in-flight animation (snapping it to fully drawn) and starts the next tile at 500 ms.
 
-```csharp
-// Bindable properties
-PipeSectionType PipeType      // determines geometry rendered
-BoardDirection  EntryDirection // which side flow enters
-BoardDirection  ExitDirection  // which side flow exits
-bool            IsLocked       // true once StartFlow has been called
-double          SpeedMultiplier // 1–100
+**Fluid basins** take three times the normal tile duration.
 
-// Method
-void StartFlow(BoardDirection entryDirection, double speedMultiplier);
+### Fast-forward and pause
 
-// Events
-event EventHandler<FlowStartedEventArgs>   FlowStarted;
-event EventHandler<FlowCompletedEventArgs> FlowCompleted;
-```
+The HUD contains two control buttons:
 
-### Event arguments
+| Button | Position | Behaviour |
+|--------|----------|-----------|
+| Pause | Right side of HUD | Opens the `PauseResultOverlay` in pause state. |
+| Fast-forward | Between the score and the pause button | Toggles fast-forward. When active, tile flow time drops to 500 ms. Mid-tile transitions cancel immediately. |
 
-```csharp
-public class FlowStartedEventArgs : EventArgs
-{
-    public BoardDirection EntryDirection { get; }
-    public GridPosition   Position       { get; }
-}
+Both buttons use the default app `Button` style (amber gradient `PrimaryButtonStyle`).
 
-public class FlowCompletedEventArgs : EventArgs
-{
-    public BoardDirection ExitDirection { get; }
-    public GridPosition   Position      { get; }
-}
-```
+### Fluid animation visual
+
+The flowing fluid is rendered as a **46 px thick `Path` stroke** that sweeps from the entry edge to the exit edge of the tile. Key properties:
+
+- The fluid layer sits **below** the pipe PNG image in the Z-order, so the pipe appears to be filling up from inside.
+- The reveal animation uses `StrokeDashOffset` (MAUI's `AnimateTo`) to sweep the path progressively from 0 to fully drawn over `durationMs`.
+- For straight pipes the path is a single line segment from entry midpoint to exit midpoint.
+- For corner pipes the path has three segments: a short straight entry segment, a quarter-circle arc, then a short straight exit segment — producing a smooth filled-pipe appearance through the bend.
+- For cross pipes the path follows the primary axis (entry to exit) only; the perpendicular axis is drawn separately if a second traversal occurs.
+
+### Tile rendering
+
+Each tile is a `PlayfieldTileView` (a MAUI `ContentView`) rendered in a `PlayfieldBoardView` grid. Tile visual layers from bottom to top:
+
+1. Base layer (tile background colour)
+2. Background image (randomised empty-tile texture)
+3. **Fluid path** (`Path` with 46 px stroke — fluid animation)
+4. Pipe overlay image (the pipe PNG)
+5. Pipe flood-fill (persistent water tint after traversal)
+6. Overlay (colour tint for tile type)
+7. Tile content labels
+8. Points label ("+N pts" popup)
+9. Illegal-move flash (red, topmost)
 
 ### Lock behaviour
 
@@ -201,11 +206,12 @@ The card's bottom-aligned **Start** button dismisses the preview and begins the 
 - Players must complete a pipe connection to this side.
 - Transitions to a "satisfied" visual state when the flow arrives.
 
-### Fluid basin
+### Fluid basin fixed tile
 
-- Rendered with a container/reservoir icon.
-- Shows a fill animation during the basin delay.
-- Grants bonus score on success.
+- Rendered with a basin/reservoir icon (`pipe_section_bassin.png` or `pipe_section_bassin_mandatory.png`).
+- Shows a fill animation during the extra delay (3× normal tile time).
+- Grants **50 bonus points** when traversed.
+- If `IsMandatory = true`, the player **must** route flow through this basin for the level to count as successful. A mandatory basin that is never visited causes the session to end in `Failed` even if all finish points are reached.
 
 ### Split section
 

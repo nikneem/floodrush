@@ -6,10 +6,8 @@ This document is the documentation-friendly companion to `specs\02-solution-arch
 FloodRush is split into a mobile game client, a dedicated API client layer, shared contracts, and a modular monolith server.
 
 ## Project responsibilities
-- `src\Game\HexMaster.FloodRush.Game` owns the .NET MAUI shell, navigation, pages, and view models.
+- `src\Game\HexMaster.FloodRush.Game` owns the .NET MAUI shell, navigation, pages, view models, and all client-side services (local state, device auth, levels API, navigation, telemetry).
 - `src\Game\HexMaster.FloodRush.Game.Core` owns deterministic gameplay logic such as board rules, scoring, and validation.
-- `src\Game\HexMaster.FloodRush.Game.Infrastructure` owns local persistence, connectivity, sync orchestration, and device services.
-- `src\Game\HexMaster.FloodRush.ApiClient` owns token acquisition and all remote server communication.
 - `src\Server\HexMaster.FloodRush.Api` is the public HTTP host.
 - `src\Server\HexMaster.FloodRush.Server.Abstractions` owns CQRS contracts and reusable server-only helpers.
 - `src\Server\HexMaster.FloodRush.Server.Profiles` owns profile registration, device login, and profile updates.
@@ -17,6 +15,9 @@ FloodRush is split into a mobile game client, a dedicated API client layer, shar
 - `src\Server\HexMaster.FloodRush.Server.Scores` owns score submission and score querying.
 - `src\Shared\HexMaster.FloodRush.Shared.Contracts` owns client/server DTOs.
 - `src\Aspire\HexMaster.FloodRush.Aspire` owns local orchestration for storage, the API host, and the MAUI client.
+- `src\Tests\HexMaster.FloodRush.Game.Core.Tests` owns unit tests for the core game engine.
+- `src\Tests\HexMaster.FloodRush.Server.Levels.Tests` owns unit tests for the levels module.
+- `src\Tests\HexMaster.FloodRush.Server.Profiles.Tests` owns unit tests for the profiles module.
 
 ## Server shape
 The server is a modular monolith.

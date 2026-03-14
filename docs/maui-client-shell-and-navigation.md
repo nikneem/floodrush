@@ -135,7 +135,7 @@ Three-column grid of `GameCard` bordered tiles. Each card shows the level displa
 
 ### Gameplay page (`Pages/GameplayPage.xaml`)
 
-- **HUD strip** (top row) — Display name, prep countdown, flow speed indicator, pause button.
+- **HUD strip** (top row) — Display name, prep countdown, flow speed indicator, fast-forward button, pause button.
 - **Board area** — `ZoomablePlayfieldViewport` hosting a rendered board built from the downloaded level revision. Fixed tiles are drawn into the playfield grid immediately so the player can inspect the board. The client prefers a fresh server copy when online and falls back to cached released levels and revisions when offline.
 - **Pre-start modal** — Centered `GameCard` shown after the level revision loads. It displays the level number, difficulty, flow timeout, and flow speed, with a **Start** button at the bottom that dismisses the modal and starts the countdown.
 - **PauseResultOverlay** — shown when `IsPaused` or `IsGameOver` is true (see below).
@@ -166,6 +166,8 @@ All services, ViewModels, and pages are registered in `MauiProgram.cs`:
 - `IApiBaseUrlProvider` / `ApiBaseUrlProvider` — **singleton**
 - `IDeviceAuthenticationService` / `DeviceAuthenticationService` — **singleton**
 - `ILevelsApiService` / `LevelsApiService` — **singleton**
+- `INetworkStatusService` / `NetworkStatusService` — **singleton**
+- `IScoresApiService` / `ScoresApiService` — **singleton**
 - All ViewModels — **transient**
 - All pages — **transient**
 
