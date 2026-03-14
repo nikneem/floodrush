@@ -62,12 +62,12 @@ public sealed class PlaceablePipeSectionDefinition
     public static IReadOnlyCollection<PlaceablePipeSectionDefinition> CreateRequiredSections() =>
     [
         new PlaceablePipeSectionDefinition(PipeSectionType.Horizontal, 10),
-        new PlaceablePipeSectionDefinition(PipeSectionType.Vertical, 12),
-        new PlaceablePipeSectionDefinition(PipeSectionType.CornerLeftToTop, 14),
-        new PlaceablePipeSectionDefinition(PipeSectionType.CornerRightToTop, 15),
-        new PlaceablePipeSectionDefinition(PipeSectionType.CornerLeftToBottom, 16),
-        new PlaceablePipeSectionDefinition(PipeSectionType.CornerRightToBottom, 17),
-        new PlaceablePipeSectionDefinition(PipeSectionType.Cross, 20, 8)
+        new PlaceablePipeSectionDefinition(PipeSectionType.Vertical, 10),
+        new PlaceablePipeSectionDefinition(PipeSectionType.CornerLeftToTop, 12),
+        new PlaceablePipeSectionDefinition(PipeSectionType.CornerRightToTop, 12),
+        new PlaceablePipeSectionDefinition(PipeSectionType.CornerLeftToBottom, 12),
+        new PlaceablePipeSectionDefinition(PipeSectionType.CornerRightToBottom, 12),
+        new PlaceablePipeSectionDefinition(PipeSectionType.Cross, 10, 50)
     ];
 
     private void ConfigureGeometry()

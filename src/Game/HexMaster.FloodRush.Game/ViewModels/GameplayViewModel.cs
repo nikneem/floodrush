@@ -356,7 +356,7 @@ public sealed class GameplayViewModel : BaseViewModel
             await navigation.GoBackAsync();
         });
 
-        RetryCommand = new Command(() =>
+        RetryCommand = new Command(async () =>
         {
             if (loadedReleasedLevel is null || loadedRevision is null)
             {
@@ -364,9 +364,14 @@ public sealed class GameplayViewModel : BaseViewModel
             }
 
             CancelPreparationCountdown();
+            IsGameOver = false;
             IsRetrying = true;
             RecordUserAction("retry");
             logger.LogInformation("Retrying level {LevelId}.", LevelId);
+
+            // Yield so the UI can render the loading overlay before the synchronous reset runs.
+            await Task.Yield();
+
             ApplyLevel(loadedReleasedLevel, loadedRevision);
         });
 
@@ -1077,7 +1082,12 @@ public sealed class GameplayViewModel : BaseViewModel
         try
         {
             var exitDir = GetPipeExitDirection(tile.PlacedPipeType.Value, entry);
-            var pts = GetPipeBasePoints(tile.PlacedPipeType.Value);
+            // A cross section that has already been traversed on the perpendicular axis
+            // awards the second-pass bonus instead of the base points.
+            var pts = tile.PlacedPipeType.Value == PipeSectionType.Cross
+                      && visitedTiles.Contains((tile.X, tile.Y))
+                ? 50
+                : GetPipeBasePoints(tile.PlacedPipeType.Value);
             return (exitDir, pts, false);
         }
         catch (InvalidOperationException)
@@ -1168,7 +1178,7 @@ public sealed class GameplayViewModel : BaseViewModel
     }
 
     private int CalculateFlowDuration() =>
-        Math.Max(150, 1000 - FlowSpeedIndicator * 8);
+        Math.Max(300, (101 - FlowSpeedIndicator) * 100);
 
     private static (int x, int y) GetAdjacentPosition(int x, int y, BoardDirection direction) =>
         direction switch
@@ -1218,12 +1228,12 @@ public sealed class GameplayViewModel : BaseViewModel
         pipeType switch
         {
             PipeSectionType.Horizontal => 10,
-            PipeSectionType.Vertical => 12,
-            PipeSectionType.CornerLeftToTop => 14,
-            PipeSectionType.CornerRightToTop => 15,
-            PipeSectionType.CornerLeftToBottom => 16,
-            PipeSectionType.CornerRightToBottom => 17,
-            PipeSectionType.Cross => 20,
+            PipeSectionType.Vertical => 10,
+            PipeSectionType.CornerLeftToTop => 12,
+            PipeSectionType.CornerRightToTop => 12,
+            PipeSectionType.CornerLeftToBottom => 12,
+            PipeSectionType.CornerRightToBottom => 12,
+            PipeSectionType.Cross => 10,
             _ => 0
         };
 }

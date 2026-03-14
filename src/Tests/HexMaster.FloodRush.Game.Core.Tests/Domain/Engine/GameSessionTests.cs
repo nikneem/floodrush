@@ -364,8 +364,8 @@ public sealed class GameSessionTests
         session.Tick(30);
 
         Assert.Equal(GamePhase.Succeeded, session.Phase);
-        // Position 1: Cross base points = 20; Position 2: Horizontal base points = 10
-        Assert.Equal(30, session.Score.PipeScore);
+        // Position 1: Cross base points = 10; Position 2: Horizontal base points = 10
+        Assert.Equal(20, session.Score.PipeScore);
     }
 
     [Fact]
@@ -402,10 +402,10 @@ public sealed class GameSessionTests
 
         Assert.Equal(GamePhase.Succeeded, session.Phase);
 
-        // One traversal should be base points (20) and one secondary bonus (8)
+        // One traversal should be base points (10) and one secondary bonus (50)
         var crossPoints = session.Score.Traversals.Select(t => t.PointsAwarded).OrderBy(p => p).ToArray();
-        Assert.Contains(8, crossPoints);   // secondary bonus
-        Assert.Contains(20, crossPoints);  // base points
+        Assert.Contains(10, crossPoints);   // base points
+        Assert.Contains(50, crossPoints);   // secondary bonus
     }
 
     [Fact]

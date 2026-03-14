@@ -1,6 +1,8 @@
 using HexMaster.FloodRush.Game.Core.Domain.Board;
 using HexMaster.FloodRush.Game.ViewModels;
 using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Graphics;
+using MauiPath = Microsoft.Maui.Controls.Shapes.Path;
 
 namespace HexMaster.FloodRush.Game.Controls;
 
@@ -28,7 +30,7 @@ public sealed class PlayfieldTileView : ContentView
     private readonly Label titleLabel;
     private readonly Label subtitleLabel;
     private readonly BoxView pipeFloodFill;
-    private readonly BoxView fluidBlob;
+    private readonly MauiPath fluidPath;
     private readonly Label pointsLabel;
     private readonly BoxView illegalFlash;
 
@@ -85,24 +87,26 @@ public sealed class PlayfieldTileView : ContentView
         tileContent.Children.Add(titleLabel);
         tileContent.Children.Add(subtitleLabel);
 
-        // Fluid animation blob – centred in the tile, offset via TranslationX/Y
-        fluidBlob = new BoxView
-        {
-            IsVisible = false,
-            InputTransparent = true,
-            Color = GetColor("FluidWater"),
-            HorizontalOptions = LayoutOptions.Center,
-            VerticalOptions = LayoutOptions.Center
-        };
-
-        // Permanent water fill – fades in once the blob has passed through so the
-        // pipe looks visibly full rather than empty again after the drop moves on.
+        // Permanent water fill – subtle wash that persists after the fluid line passes.
         pipeFloodFill = new BoxView
         {
             IsVisible = false,
             Opacity = 0,
             InputTransparent = true,
             Color = GetColor("FluidWater"),
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill
+        };
+
+        // Animated fluid line – traces the pipe centreline from entry edge to exit edge.
+        fluidPath = new MauiPath
+        {
+            IsVisible = false,
+            InputTransparent = true,
+            Stroke = new SolidColorBrush(GetColor("FluidWater")),
+            StrokeLineCap = PenLineCap.Round,
+            StrokeLineJoin = PenLineJoin.Round,
+            Fill = null,
             HorizontalOptions = LayoutOptions.Fill,
             VerticalOptions = LayoutOptions.Fill
         };
@@ -136,10 +140,10 @@ public sealed class PlayfieldTileView : ContentView
         tileVisual.Children.Add(baseLayer);
         tileVisual.Children.Add(backgroundImage);
         tileVisual.Children.Add(pipeOverlayImage);
-        tileVisual.Children.Add(pipeFloodFill);  // water fill – above pipe PNG
+        tileVisual.Children.Add(pipeFloodFill);  // subtle wash – above pipe PNG
         tileVisual.Children.Add(overlay);
+        tileVisual.Children.Add(fluidPath);      // fluid line – above overlay colours
         tileVisual.Children.Add(tileContent);
-        tileVisual.Children.Add(fluidBlob);    // on top of content
         tileVisual.Children.Add(pointsLabel);  // "+N pts" popup
         tileVisual.Children.Add(illegalFlash); // topmost – illegal move feedback
 
@@ -203,9 +207,12 @@ public sealed class PlayfieldTileView : ContentView
         subtitleLabel.TextColor = GetColor(subtitleColorKey);
         tileBorder.Stroke = GetTileStroke(tile.Kind);
 
-        // Reset water fill whenever the tile data changes (level load or pipe swap).
+        // Reset water fill and fluid line whenever tile data changes.
         pipeFloodFill.IsVisible = false;
         pipeFloodFill.Opacity = 0;
+        this.AbortAnimation("FluidPath");
+        fluidPath.IsVisible = false;
+        fluidPath.Data = null;
 
         if (!string.IsNullOrEmpty(tile.PipeOverlayImage))
         {
@@ -291,8 +298,10 @@ public sealed class PlayfieldTileView : ContentView
 
     /// <summary>
     /// Animates fluid flowing from <paramref name="entryDirection"/> through this tile to
-    /// <paramref name="exitDirection"/>, then shows a "+points" pop-up and raises
-    /// <see cref="FlowCompleted"/>.
+    /// <paramref name="exitDirection"/> by drawing a line that traces the pipe centreline.
+    /// <see cref="FlowCompleted"/> is raised as soon as the line animation finishes so
+    /// the next tile can start immediately, giving a seamless continuous flow effect.
+    /// The "+points" pop-up plays in the background after that.
     /// </summary>
     public async Task BeginFlowAsync(
         BoardDirection entryDirection,
@@ -302,83 +311,151 @@ public sealed class PlayfieldTileView : ContentView
         bool isTerminal = false)
     {
         var size = TileSize > 0 ? TileSize : 64d;
-        var blobSize = Math.Max(8d, size * 0.26);
 
-        fluidBlob.WidthRequest = blobSize;
-        fluidBlob.HeightRequest = blobSize;
-        fluidBlob.CornerRadius = new CornerRadius(blobSize / 2d);
+        var pathLength = EstimatePathLength(entryDirection, exitDirection, size, isTerminal);
+        var animDuration = isTerminal ? Math.Max(100, durationMs / 2) : durationMs;
 
-        var (entryTx, entryTy) = GetEdgeOffset(entryDirection, size);
-        var (exitTx, exitTy) = GetEdgeOffset(exitDirection, size);
-        var halfDuration = (uint)Math.Max(80, durationMs / 2);
+        fluidPath.StrokeThickness = Math.Max(4d, size * 0.18);
+        fluidPath.Data = BuildFluidPathGeometry(entryDirection, exitDirection, size, isTerminal);
+        // One dash exactly as long as the path, followed by an equal gap so the path
+        // is initially invisible and becomes fully visible as the offset reaches zero.
+        fluidPath.StrokeDashArray = new DoubleCollection { pathLength, pathLength };
+        fluidPath.StrokeDashOffset = pathLength;
+        fluidPath.IsVisible = true;
 
-        // Start the blob at the entry edge
-        fluidBlob.TranslationX = entryTx;
-        fluidBlob.TranslationY = entryTy;
-        fluidBlob.Opacity = 0.92d;
-        fluidBlob.IsVisible = true;
+        await AnimateFluidPathAsync(pathLength, animDuration);
 
-        // Phase 1: entry edge → tile centre
-        await fluidBlob.TranslateTo(0, 0, halfDuration, Easing.CubicIn);
-
-        if (!isTerminal)
-        {
-            // Phase 2: tile centre → exit edge
-            await fluidBlob.TranslateTo(exitTx, exitTy, halfDuration, Easing.CubicOut);
-        }
-
-        fluidBlob.IsVisible = false;
-        fluidBlob.TranslationX = 0;
-        fluidBlob.TranslationY = 0;
-
-        // Reveal the permanent water fill so the pipe looks full after the drop passes.
-        pipeFloodFill.IsVisible = true;
-        await pipeFloodFill.FadeTo(0.52, (uint)Math.Max(60, durationMs / 3), Easing.CubicOut);
-
-        // Show "+N pts" pop-up when points were earned
-        if (points > 0)
-        {
-            pointsLabel.Text = $"+{points}";
-            pointsLabel.FontSize = Math.Max(10d, size * 0.22);
-            pointsLabel.Opacity = 0;
-            pointsLabel.Scale = 0.5;
-            pointsLabel.TranslationY = 0;
-            pointsLabel.IsVisible = true;
-
-            await Task.WhenAll(
-                pointsLabel.FadeTo(1.0, 200, Easing.CubicOut),
-                pointsLabel.ScaleTo(1.1, 200, Easing.CubicOut));
-
-            await Task.Delay(300);
-
-            await Task.WhenAll(
-                pointsLabel.TranslateTo(0, -size * 0.45, 350, Easing.CubicIn),
-                pointsLabel.FadeTo(0, 350, Easing.CubicIn));
-
-            pointsLabel.IsVisible = false;
-            pointsLabel.TranslationY = 0;
-        }
-
+        // Signal the next tile immediately – the line is fully drawn and the pipe
+        // looks filled, so there is no visual reason to wait for the points popup.
         FlowCompleted?.Invoke(this, new TileFlowCompletedEventArgs(
             Tile?.X ?? 0,
             Tile?.Y ?? 0,
             isTerminal ? entryDirection : exitDirection,
             points,
             isTerminal));
+
+        if (points > 0)
+        {
+            // Fire-and-forget: popup plays while the next tile's animation has already begun.
+            _ = ShowPointsPopupAsync(size, points);
+        }
     }
 
-    // Returns the translation offset from the tile centre to the centre of each edge.
-    private static (double x, double y) GetEdgeOffset(BoardDirection direction, double tileSize)
+    // Builds a PathGeometry whose single figure traces the pipe centreline from the
+    // entry edge midpoint to the exit edge midpoint (or to the tile centre for a
+    // terminal tile).  Straight traversals become a LineSegment; corners become a
+    // QuadraticBezierSegment whose control point is the nearest tile corner, giving
+    // a smooth quarter-circle curve that matches the visual pipe shapes.
+    private static PathGeometry BuildFluidPathGeometry(
+        BoardDirection entry,
+        BoardDirection exit,
+        double size,
+        bool terminal)
     {
-        var half = tileSize / 2d;
-        return direction switch
+        var half = size / 2d;
+        var startPoint = GetEdgePoint(entry, size, half);
+
+        PathSegment segment;
+        if (terminal)
         {
-            BoardDirection.Left => (-half, 0),
-            BoardDirection.Right => (half, 0),
-            BoardDirection.Top => (0, -half),
-            BoardDirection.Bottom => (0, half),
-            _ => (0, 0)
+            segment = new LineSegment { Point = new Point(half, half) };
+        }
+        else if (IsStraightPath(entry, exit))
+        {
+            segment = new LineSegment { Point = GetEdgePoint(exit, size, half) };
+        }
+        else
+        {
+            segment = new QuadraticBezierSegment
+            {
+                Point1 = GetCornerControlPoint(entry, exit, size),
+                Point2 = GetEdgePoint(exit, size, half)
+            };
+        }
+
+        var figure = new PathFigure { StartPoint = startPoint, IsClosed = false };
+        figure.Segments.Add(segment);
+
+        var geometry = new PathGeometry();
+        geometry.Figures.Add(figure);
+        return geometry;
+    }
+
+    // Approximate arc length used to initialise StrokeDashOffset so the path starts
+    // fully invisible and the animation reveals it at a consistent pixel-per-second rate.
+    //   Straight:  exactly TileSize
+    //   Corner:    quadratic bezier ≈ 0.82 × TileSize (close to the quarter-circle arc)
+    //   Terminal:  half of TileSize (entry edge → centre only)
+    private static double EstimatePathLength(
+        BoardDirection entry,
+        BoardDirection exit,
+        double size,
+        bool terminal)
+    {
+        if (terminal) return size / 2d;
+        return IsStraightPath(entry, exit) ? size : size * 0.82;
+    }
+
+    private static bool IsStraightPath(BoardDirection entry, BoardDirection exit) =>
+        (entry == BoardDirection.Left && exit == BoardDirection.Right) ||
+        (entry == BoardDirection.Right && exit == BoardDirection.Left) ||
+        (entry == BoardDirection.Top && exit == BoardDirection.Bottom) ||
+        (entry == BoardDirection.Bottom && exit == BoardDirection.Top);
+
+    private static Point GetEdgePoint(BoardDirection direction, double size, double half) =>
+        direction switch
+        {
+            BoardDirection.Left => new Point(0, half),
+            BoardDirection.Right => new Point(size, half),
+            BoardDirection.Top => new Point(half, 0),
+            BoardDirection.Bottom => new Point(half, size),
+            _ => new Point(half, half)
         };
+
+    // The control point is the tile corner nearest to both directions involved.
+    // e.g. Left + Top → top-left corner (0, 0), Right + Bottom → bottom-right (size, size).
+    private static Point GetCornerControlPoint(BoardDirection entry, BoardDirection exit, double size)
+    {
+        var x = (entry == BoardDirection.Right || exit == BoardDirection.Right) ? size : 0d;
+        var y = (entry == BoardDirection.Bottom || exit == BoardDirection.Bottom) ? size : 0d;
+        return new Point(x, y);
+    }
+
+    private Task AnimateFluidPathAsync(double pathLength, int durationMs)
+    {
+        var tcs = new TaskCompletionSource<bool>();
+        this.Animate(
+            "FluidPath",
+            v => fluidPath.StrokeDashOffset = v,
+            start: pathLength,
+            end: 0d,
+            length: (uint)Math.Max(16, durationMs),
+            easing: Easing.Linear,
+            finished: (_, cancelled) => tcs.TrySetResult(!cancelled));
+        return tcs.Task;
+    }
+
+    private async Task ShowPointsPopupAsync(double size, int points)
+    {
+        pointsLabel.Text = $"+{points}";
+        pointsLabel.FontSize = Math.Max(10d, size * 0.22);
+        pointsLabel.Opacity = 0;
+        pointsLabel.Scale = 0.5;
+        pointsLabel.TranslationY = 0;
+        pointsLabel.IsVisible = true;
+
+        await Task.WhenAll(
+            pointsLabel.FadeTo(1.0, 200, Easing.CubicOut),
+            pointsLabel.ScaleTo(1.1, 200, Easing.CubicOut));
+
+        await Task.Delay(300);
+
+        await Task.WhenAll(
+            pointsLabel.TranslateTo(0, -size * 0.45, 350, Easing.CubicIn),
+            pointsLabel.FadeTo(0, 350, Easing.CubicIn));
+
+        pointsLabel.IsVisible = false;
+        pointsLabel.TranslationY = 0;
     }
 
     /// <summary>
