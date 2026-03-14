@@ -271,10 +271,10 @@ public sealed class GameSessionTests
     // ── Simulation: fluid basin ─────────────────────────────────────────────
 
     [Fact]
-    public void Tick_FluidBasin_PausesFlowForFillDelay()
+    public void Tick_FluidBasin_PausesFlowWithTripleTransitTime()
     {
-        // Layout: Start(0,0,R) → Basin(1,0,L entry,R exit,200ms fill,20pts) → H(2,0) → Finish(3,0,L)
-        // Speed=100 → 10ms transit; basin adds 200ms
+        // Layout: Start(0,0,R) → Basin(1,0,L entry,R exit,0ms fill,20pts) → H(2,0) → Finish(3,0,L)
+        // Speed=100 → 10ms transit; basin takes 3× transit = 30ms
         var level = new LevelDefinition(
             "basin-test",
             "Basin Test",
@@ -283,7 +283,7 @@ public sealed class GameSessionTests
             new FlowSpeedIndicator(100),
             [
                 new StartPointTile(new GridPosition(0, 0), BoardDirection.Right),
-                new FluidBasinTile(new GridPosition(1, 0), BoardDirection.Left, BoardDirection.Right, 200, 20),
+                new FluidBasinTile(new GridPosition(1, 0), BoardDirection.Left, BoardDirection.Right, 0, 20),
                 new FinishPointTile(new GridPosition(3, 0), BoardDirection.Left)
             ]);
 
@@ -293,17 +293,98 @@ public sealed class GameSessionTests
         session.StartFlow();
 
         // After 10ms: start tile transit done, enters basin. Basin bonus IS credited on entry.
-        // RequiredMs becomes 200ms fill + 10ms transit = 210ms before exiting.
+        // RequiredMs becomes 10ms × 3 = 30ms (3× transit rule).
         session.Tick(10);
         Assert.Equal(GamePhase.FlowActive, session.Phase);
         Assert.Equal(20, session.Score.BasinBonus); // credited when basin is entered
 
-        // Wait... entering the basin happens when the start transit completes (at 10ms).
-        // At that point basin bonus is credited and RequiredMs becomes 210ms.
-        session.Tick(210); // basin fill + transit
+        session.Tick(30); // basin 3× transit
         session.Tick(10);  // final pipe + finish
         Assert.Equal(GamePhase.Succeeded, session.Phase);
         Assert.Equal(20, session.Score.BasinBonus);
+    }
+
+    [Fact]
+    public void Tick_MandatoryBasin_FailsWhenNotTraversed()
+    {
+        // Layout: Start(0,0,R) → mandatory Basin(2,0) but player routes past it → H(1,0) → Finish(3,0,L)
+        // Basin at (2,0) is mandatory but the player's pipe skips it.
+        var level = new LevelDefinition(
+            "mandatory-basin-test",
+            "Mandatory Basin Test",
+            new BoardDimensions(4, 1),
+            0,
+            new FlowSpeedIndicator(100),
+            [
+                new StartPointTile(new GridPosition(0, 0), BoardDirection.Right),
+                new FluidBasinTile(new GridPosition(2, 0), BoardDirection.Left, BoardDirection.Right, 0, 50, isMandatory: true),
+                new FinishPointTile(new GridPosition(3, 0), BoardDirection.Left)
+            ]);
+
+        // Note: pipe placed at (1,0) bridges Start→Finish via (1,0)→(2,0 mandatory basin)→(3,0 finish)
+        // To skip the basin we'd need a different layout, but here the only path goes through (2,0).
+        // Let's test the mandatory-basin-not-traversed fail by routing to finish WITHOUT the basin:
+        // We use a 5-wide board and skip the basin column.
+        var level2 = new LevelDefinition(
+            "mandatory-basin-skip-test",
+            "Mandatory Basin Skip Test",
+            new BoardDimensions(6, 3),
+            0,
+            new FlowSpeedIndicator(100),
+            [
+                new StartPointTile(new GridPosition(0, 1), BoardDirection.Right),
+                new FluidBasinTile(new GridPosition(3, 0), BoardDirection.Left, BoardDirection.Right, 0, 50, isMandatory: true),
+                new FinishPointTile(new GridPosition(5, 1), BoardDirection.Left)
+            ]);
+
+        var session = CreateSession(level2);
+        session.StartPlacementPhase();
+        // Route straight across row 1, bypassing the mandatory basin at row 0
+        session.PlacePipe(new GridPosition(1, 1), PipeSectionType.Horizontal);
+        session.PlacePipe(new GridPosition(2, 1), PipeSectionType.Horizontal);
+        session.PlacePipe(new GridPosition(3, 1), PipeSectionType.Horizontal);
+        session.PlacePipe(new GridPosition(4, 1), PipeSectionType.Horizontal);
+        session.StartFlow();
+
+        // Advance until flow reaches finish — the mandatory basin was bypassed
+        for (var i = 0; i < 60; i++) session.Tick(10);
+
+        Assert.Equal(GamePhase.Failed, session.Phase);
+    }
+
+    [Fact]
+    public void Tick_MandatoryBasin_SucceedsWhenTraversed()
+    {
+        // Layout on 6×3 board:
+        // Start(0,1,R) → (1,1) CornerLeftToTop → (1,0) CornerRightToBottom → (2,0) H
+        //   → Basin(3,0, entry L, exit R) → (4,0) CornerLeftToBottom → (4,1) CornerRightToTop → Finish(5,1,L)
+        var level = new LevelDefinition(
+            "mandatory-basin-traverse-test",
+            "Mandatory Basin Traverse Test",
+            new BoardDimensions(6, 3),
+            0,
+            new FlowSpeedIndicator(100),
+            [
+                new StartPointTile(new GridPosition(0, 1), BoardDirection.Right),
+                new FluidBasinTile(new GridPosition(3, 0), BoardDirection.Left, BoardDirection.Right, 0, 50, isMandatory: true),
+                new FinishPointTile(new GridPosition(5, 1), BoardDirection.Left)
+            ]);
+
+        var session = CreateSession(level);
+        session.StartPlacementPhase();
+        session.PlacePipe(new GridPosition(1, 1), PipeSectionType.CornerLeftToTop);    // Left→Top
+        session.PlacePipe(new GridPosition(1, 0), PipeSectionType.CornerRightToBottom); // Bottom→Right
+        session.PlacePipe(new GridPosition(2, 0), PipeSectionType.Horizontal);
+        // basin at (3,0) is fixed
+        session.PlacePipe(new GridPosition(4, 0), PipeSectionType.CornerLeftToBottom); // Left→Bottom
+        session.PlacePipe(new GridPosition(4, 1), PipeSectionType.CornerRightToTop);   // Top→Right
+        session.StartFlow();
+
+        // Advance generously – basin takes 30ms; total path ~7 tiles at 10ms each
+        for (var i = 0; i < 200; i++) session.Tick(10);
+
+        Assert.Equal(GamePhase.Succeeded, session.Phase);
+        Assert.Equal(50, session.Score.BasinBonus);
     }
 
     // ── Simulation: split section ───────────────────────────────────────────

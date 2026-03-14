@@ -9,4 +9,5 @@ public sealed record LevelFixedTileDto(
     BoardDirectionDto? SecondaryOutputDirection = null,
     int? FillDelayMilliseconds = null,
     int? SpeedModifierPercent = null,
-    int BonusPoints = 0);
+    int BonusPoints = 0,
+    bool IsMandatory = false);

@@ -79,7 +79,8 @@ public sealed class BuiltInLevelsCatalog
                 OutputDirection: MapDirection(fluidBasin.ExitDirection),
                 EntryDirection: MapDirection(fluidBasin.EntryDirection),
                 FillDelayMilliseconds: fluidBasin.FillDelayMilliseconds,
-                BonusPoints: fluidBasin.BonusPoints),
+                BonusPoints: fluidBasin.BonusPoints,
+                IsMandatory: fluidBasin.IsMandatory),
             SplitSectionTile splitSection => new LevelFixedTileDto(
                 LevelFixedTileTypeDto.SplitSection,
                 splitSection.Position.X,

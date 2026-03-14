@@ -24,6 +24,7 @@ public sealed class GameSession
 
     private readonly LevelDefinition level;
     private readonly HashSet<GridPosition> requiredFinishPositions;
+    private readonly HashSet<GridPosition> mandatoryBasinPositions;
     private readonly HashSet<GridPosition> reachedFinishPoints = [];
     private readonly HashSet<GridPosition> traversedFixedTiles = [];
     private readonly Dictionary<GridPosition, HashSet<FlowTraversalAxis>> traversedAxesByPosition = [];
@@ -38,6 +39,7 @@ public sealed class GameSession
         Board = GameBoard.FromLevel(level);
         Score = new ScoreBreakdown();
         requiredFinishPositions = [.. level.FixedTiles.OfType<FinishPointTile>().Select(t => t.Position)];
+        mandatoryBasinPositions = [.. level.FixedTiles.OfType<FluidBasinTile>().Where(b => b.IsMandatory).Select(t => t.Position)];
         Phase = GamePhase.LevelLoaded;
     }
 
@@ -274,7 +276,7 @@ public sealed class GameSession
                 Score.AddBasinBonus(basin.BonusPoints);
                 branch.Position = basin.Position;
                 branch.PendingExitDirection = basin.ExitDirection;
-                branch.RequiredMilliseconds = transitMs + basin.FillDelayMilliseconds;
+                branch.RequiredMilliseconds = transitMs * 3;
                 break;
 
             case SplitSectionTile split:
@@ -377,7 +379,8 @@ public sealed class GameSession
     private void CheckGameOverConditions()
     {
         if (requiredFinishPositions.Count > 0 &&
-            requiredFinishPositions.All(reachedFinishPoints.Contains))
+            requiredFinishPositions.All(reachedFinishPoints.Contains) &&
+            mandatoryBasinPositions.All(traversedFixedTiles.Contains))
         {
             Score.SetCompletionBonus(completionBonusPoints);
             Phase = GamePhase.Succeeded;

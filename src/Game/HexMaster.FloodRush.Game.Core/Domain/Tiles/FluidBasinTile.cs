@@ -10,16 +10,20 @@ public sealed class FluidBasinTile : FixedTile
         BoardDirection entryDirection,
         BoardDirection exitDirection,
         int fillDelayMilliseconds,
-        int bonusPoints)
+        int bonusPoints,
+        bool isMandatory = false)
         : base(position, bonusPoints)
     {
         EnsureValidDirections(entryDirection, exitDirection);
         EntryDirection = entryDirection;
         ExitDirection = exitDirection;
         SetFillDelayMilliseconds(fillDelayMilliseconds);
+        IsMandatory = isMandatory;
     }
 
     public override FixedTileType FixedTileType => FixedTileType.FluidBasin;
+
+    public bool IsMandatory { get; private set; }
 
     public BoardDirection EntryDirection { get; private set; }
 
@@ -43,7 +47,7 @@ public sealed class FluidBasinTile : FixedTile
         FillDelayMilliseconds = Guard.AgainstNegative(fillDelayMilliseconds, nameof(fillDelayMilliseconds));
 
     public override FixedTile Clone() =>
-        new FluidBasinTile(Position, EntryDirection, ExitDirection, FillDelayMilliseconds, BonusPoints);
+        new FluidBasinTile(Position, EntryDirection, ExitDirection, FillDelayMilliseconds, BonusPoints, IsMandatory);
 
     internal override bool CanAcceptFlowFrom(BoardDirection direction) => direction == EntryDirection;
 

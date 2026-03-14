@@ -79,6 +79,8 @@ public sealed class GameplayViewModel : BaseViewModel
     private LevelRevisionDto? loadedRevision;
     private ReleasedLevelSummaryDto? loadedReleasedLevel;
     private readonly HashSet<(int X, int Y)> visitedTiles = [];
+    private readonly HashSet<(int X, int Y)> mandatoryBasinPositions = [];
+    private readonly HashSet<(int X, int Y)> traversedBasinPositions = [];
 
     /// <summary>
     /// Fired when the flow engine wants to animate fluid on a specific tile.
@@ -570,6 +572,12 @@ public sealed class GameplayViewModel : BaseViewModel
         isFlowActive = false;
         isReplacementPenaltyActive = false;
         visitedTiles.Clear();
+        traversedBasinPositions.Clear();
+        mandatoryBasinPositions.Clear();
+        mandatoryBasinPositions.UnionWith(
+            (levelRevision.FixedTiles ?? [])
+                .Where(t => t.TileType == LevelFixedTileTypeDto.FluidBasin && t.IsMandatory)
+                .Select(t => (t.X, t.Y)));
         DisplayName = levelRevision.DisplayName;
         Difficulty = string.IsNullOrWhiteSpace(levelRevision.Difficulty)
             ? releasedLevel.Difficulty
@@ -840,11 +848,14 @@ public sealed class GameplayViewModel : BaseViewModel
             _ => string.Empty
         };
 
-    private static string GetTileOverlayImage(LevelFixedTileTypeDto tileType) =>
-        tileType switch
+    private static string GetTileOverlayImage(LevelFixedTileDto tile) =>
+        tile.TileType switch
         {
             LevelFixedTileTypeDto.StartPoint => "pipe_section_start.png",
             LevelFixedTileTypeDto.FinishPoint => "pipe_section_end.png",
+            LevelFixedTileTypeDto.FluidBasin => tile.IsMandatory
+                ? "pipe_section_bassin_mandatory.png"
+                : "pipe_section_bassin.png",
             _ => string.Empty
         };
 
@@ -1044,6 +1055,12 @@ public sealed class GameplayViewModel : BaseViewModel
         if (e.IsTerminal)
         {
             isFlowActive = false;
+            if (!mandatoryBasinPositions.All(p => traversedBasinPositions.Contains(p)))
+            {
+                EndFlowFailed();
+                return;
+            }
+
             IsSuccess = true;
             localState.RecordLevelCompletion(LevelId);
             logger.LogInformation(
@@ -1089,7 +1106,9 @@ public sealed class GameplayViewModel : BaseViewModel
             EntryDirection = entryDir,
             ExitDirection = nextExitDir,
             Points = nextPoints,
-            DurationMs = CalculateFlowDuration(),
+            DurationMs = nextTile.Kind == PlayfieldTileKind.FluidBasin
+                ? CalculateFlowDuration() * 3
+                : CalculateFlowDuration(),
             IsTerminal = isTerminal
         });
     }
@@ -1105,6 +1124,7 @@ public sealed class GameplayViewModel : BaseViewModel
             return fixedTile.TileType switch
             {
                 LevelFixedTileTypeDto.FinishPoint => HandleFinishPoint(fixedTile, entry),
+                LevelFixedTileTypeDto.FluidBasin => HandleBasinTile(fixedTile, entry),
                 LevelFixedTileTypeDto.StartPoint => null, // cannot re-enter start
                 _ => null
             };
@@ -1136,6 +1156,16 @@ public sealed class GameplayViewModel : BaseViewModel
         return expected == entry
             ? (entry, fixedTile.BonusPoints, true)
             : null; // fluid arrived from the wrong side
+    }
+
+    private (BoardDirection exitDir, int points, bool isTerminal)? HandleBasinTile(
+        LevelFixedTileDto fixedTile, BoardDirection entry)
+    {
+        var expected = ToGameDirection(fixedTile.EntryDirection ?? BoardDirectionDto.Left);
+        if (expected != entry) return null; // fluid arrived from wrong side
+        traversedBasinPositions.Add((fixedTile.X, fixedTile.Y));
+        var exitDir = ToGameDirection(fixedTile.OutputDirection ?? BoardDirectionDto.Right);
+        return (exitDir, fixedTile.BonusPoints, false);
     }
 
     private async Task LoadHighScoresInBackgroundAsync(string levelId)
