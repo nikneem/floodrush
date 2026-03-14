@@ -49,9 +49,11 @@ public sealed class FluidBasinTile : FixedTile
     public override FixedTile Clone() =>
         new FluidBasinTile(Position, EntryDirection, ExitDirection, FillDelayMilliseconds, BonusPoints, IsMandatory);
 
-    internal override bool CanAcceptFlowFrom(BoardDirection direction) => direction == EntryDirection;
+    internal override bool CanAcceptFlowFrom(BoardDirection direction) =>
+        direction == EntryDirection || direction == ExitDirection;
 
-    internal override IReadOnlyCollection<BoardDirection> GetOutgoingDirections() => [ExitDirection];
+    internal override IReadOnlyCollection<BoardDirection> GetOutgoingDirections() =>
+        [EntryDirection, ExitDirection];
 
     private static void EnsureValidDirections(BoardDirection entryDirection, BoardDirection exitDirection)
     {

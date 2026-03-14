@@ -30,4 +30,36 @@ public sealed class FluidBasinTileTests
         Assert.Equal(BoardDirection.Left, tile.EntryDirection);
         Assert.Equal(BoardDirection.Right, tile.ExitDirection);
     }
+
+    [Fact]
+    public void CanAcceptFlowFrom_AcceptsEntryDirection()
+    {
+        var tile = new FluidBasinTile(new GridPosition(1, 1), BoardDirection.Left, BoardDirection.Right, 0, 10);
+        Assert.True(tile.CanAcceptFlowFrom(BoardDirection.Left));
+    }
+
+    [Fact]
+    public void CanAcceptFlowFrom_AcceptsExitDirectionForReverseFlow()
+    {
+        var tile = new FluidBasinTile(new GridPosition(1, 1), BoardDirection.Left, BoardDirection.Right, 0, 10);
+        Assert.True(tile.CanAcceptFlowFrom(BoardDirection.Right));
+    }
+
+    [Fact]
+    public void CanAcceptFlowFrom_RejectsUnrelatedDirection()
+    {
+        var tile = new FluidBasinTile(new GridPosition(1, 1), BoardDirection.Left, BoardDirection.Right, 0, 10);
+        Assert.False(tile.CanAcceptFlowFrom(BoardDirection.Top));
+        Assert.False(tile.CanAcceptFlowFrom(BoardDirection.Bottom));
+    }
+
+    [Fact]
+    public void GetOutgoingDirections_ReturnsBothDirections()
+    {
+        var tile = new FluidBasinTile(new GridPosition(1, 1), BoardDirection.Left, BoardDirection.Right, 0, 10);
+        var directions = tile.GetOutgoingDirections();
+        Assert.Contains(BoardDirection.Left, directions);
+        Assert.Contains(BoardDirection.Right, directions);
+        Assert.Equal(2, directions.Count);
+    }
 }

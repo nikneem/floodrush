@@ -275,7 +275,9 @@ public sealed class GameSession
 
                 Score.AddBasinBonus(basin.BonusPoints);
                 branch.Position = basin.Position;
-                branch.PendingExitDirection = basin.ExitDirection;
+                branch.PendingExitDirection = enteredFrom == basin.EntryDirection
+                    ? basin.ExitDirection
+                    : basin.EntryDirection;
                 branch.RequiredMilliseconds = transitMs * 3;
                 break;
 

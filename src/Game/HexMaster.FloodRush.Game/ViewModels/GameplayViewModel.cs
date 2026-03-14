@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using HexMaster.FloodRush.Game.Controls;
@@ -1174,10 +1174,20 @@ public sealed class GameplayViewModel : BaseViewModel
     private (BoardDirection exitDir, int points, bool isTerminal)? HandleBasinTile(
         LevelFixedTileDto fixedTile, BoardDirection entry)
     {
-        var expected = ToGameDirection(fixedTile.EntryDirection ?? BoardDirectionDto.Left);
-        if (expected != entry) return null; // fluid arrived from wrong side
+        var entryDir = ToGameDirection(fixedTile.EntryDirection ?? BoardDirectionDto.Left);
+        var outDir = ToGameDirection(fixedTile.OutputDirection ?? BoardDirectionDto.Right);
+
+        // Basins allow bidirectional flow: enter from EntryDirection exits via OutputDirection,
+        // or enter from OutputDirection exits via EntryDirection.
+        BoardDirection exitDir;
+        if (entry == entryDir)
+            exitDir = outDir;
+        else if (entry == outDir)
+            exitDir = entryDir;
+        else
+            return null; // fluid arrived from incompatible direction
+
         traversedBasinPositions.Add((fixedTile.X, fixedTile.Y));
-        var exitDir = ToGameDirection(fixedTile.OutputDirection ?? BoardDirectionDto.Right);
         return (exitDir, fixedTile.BonusPoints, false);
     }
 

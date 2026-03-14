@@ -305,6 +305,34 @@ public sealed class GameSessionTests
     }
 
     [Fact]
+    public void Tick_FluidBasin_AllowsReverseTraversal()
+    {
+        // Layout: Finish(0,0,R) ← Basin(1,0,L entry,R exit) ← H(2,0) ← Start(3,0,L)
+        // Flow enters basin from the Right (its ExitDirection), exits via Left (EntryDirection).
+        var level = new LevelDefinition(
+            "basin-reverse-test",
+            "Basin Reverse Test",
+            new BoardDimensions(4, 1),
+            0,
+            new FlowSpeedIndicator(100),
+            [
+                new StartPointTile(new GridPosition(3, 0), BoardDirection.Left),
+                new FluidBasinTile(new GridPosition(1, 0), BoardDirection.Left, BoardDirection.Right, 0, 20),
+                new FinishPointTile(new GridPosition(0, 0), BoardDirection.Right)
+            ]);
+
+        var session = CreateSession(level);
+        session.StartPlacementPhase();
+        session.PlacePipe(new GridPosition(2, 0), PipeSectionType.Horizontal);
+        session.StartFlow();
+
+        for (var i = 0; i < 60; i++) session.Tick(10);
+
+        Assert.Equal(GamePhase.Succeeded, session.Phase);
+        Assert.Equal(20, session.Score.BasinBonus);
+    }
+
+    [Fact]
     public void Tick_MandatoryBasin_FailsWhenNotTraversed()
     {
         // Layout: Start(0,0,R) → mandatory Basin(2,0) but player routes past it → H(1,0) → Finish(3,0,L)
