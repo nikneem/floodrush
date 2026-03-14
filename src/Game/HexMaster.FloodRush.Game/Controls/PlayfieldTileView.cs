@@ -142,10 +142,10 @@ public sealed class PlayfieldTileView : ContentView
         var tileVisual = new Grid();
         tileVisual.Children.Add(baseLayer);
         tileVisual.Children.Add(backgroundImage);
+        tileVisual.Children.Add(fluidPath);      // fluid line – below pipe so it fills through transparency
         tileVisual.Children.Add(pipeOverlayImage);
         tileVisual.Children.Add(pipeFloodFill);  // subtle wash – above pipe PNG
         tileVisual.Children.Add(overlay);
-        tileVisual.Children.Add(fluidPath);      // fluid line – above overlay colours
         tileVisual.Children.Add(tileContent);
         tileVisual.Children.Add(pointsLabel);  // "+N pts" popup
         tileVisual.Children.Add(illegalFlash); // topmost – illegal move feedback
@@ -334,7 +334,7 @@ public sealed class PlayfieldTileView : ContentView
         var pathLength = EstimatePathLength(entryDirection, exitDirection, size, isTerminal);
         var animDuration = isTerminal ? Math.Max(100, durationMs / 2) : durationMs;
 
-        fluidPath.StrokeThickness = Math.Max(4d, size * 0.18);
+        fluidPath.StrokeThickness = 46;
         fluidPath.Data = BuildFluidPathGeometry(entryDirection, exitDirection, size, isTerminal);
         // One dash exactly as long as the path, followed by an equal gap so the path
         // is initially invisible and becomes fully visible as the offset reaches zero.
