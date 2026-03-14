@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.3.0-preview.1.26156.8">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.1.2" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.3.0-preview.1.26156.8" />
     <PackageReference Include="Aspire.Hosting.Maui" Version="13.1.2-preview.1.26125.13" />
     <ProjectReference Include="..\..\..\Server\HexMaster.FloodRush.Api\HexMaster.FloodRush.Api.csproj" />
   </ItemGroup>

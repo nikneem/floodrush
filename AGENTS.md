@@ -62,6 +62,13 @@ The `docs\` folder contains the higher-level product framing. Read `docs\product
 - Keep HTTP endpoints thin in the API host and push behavior into module feature handlers.
 - Use Azure Table Storage as the server persistence default and wire local storage dependencies through Aspire.
 
+## Aspire MCP workflow
+- Always start the AppHost with `aspire run --detach` from the workspace root. Starting with `dotnet run` directly bypasses the Aspire CLI state registration that `aspire agent mcp` depends on for discovery.
+- After starting a new AppHost (detached), call `aspire-list_apphosts` before using any other MCP tools to confirm the new instance is registered and selected. Do not assume the MCP is immediately ready.
+- If `aspire agent mcp` fails to find any AppHost after a fresh start, stale backchannel socket files in `~\.aspire\cli\backchannels\` are the most likely cause. Each dead `aux.sock.*` file forces a connection timeout; with many stale files the MCP appears broken. Delete them with `Remove-Item "$env:USERPROFILE\.aspire\cli\backchannels\*" -Force` when no AppHost is running, then restart the MCP server in VS Code.
+- On Windows, Unix domain socket files under `~\.aspire\cli\backchannels\` are NOT cleaned up automatically when an AppHost is killed (vs. stopped gracefully). This is a known Aspire CLI limitation — stale files accumulate over multiple detach-and-kill cycles.
+- The VS Code MCP server entry for Aspire uses `--nologo --non-interactive` (see `.vscode/mcp.json`) to prevent startup banners and interactive spinners from corrupting the stdio protocol channel.
+
 ## Observability expectations
 - Treat logging, tracing, and metrics as first-class behavior for both the server and the MAUI client.
 - Server projects should keep using the shared Aspire service-defaults OpenTelemetry configuration rather than duplicating exporter setup in each module.
@@ -74,3 +81,25 @@ The `docs\` folder contains the higher-level product framing. Read `docs\product
 - If implementation changes the intended behavior, update the matching file in `specs\`.
 - Keep new specs numbered and aligned with implementation order.
 - Use concise acceptance criteria so future contributors can translate specs into tests.
+
+## Git commit workflow
+
+After each **logical step** — a feature slice, bug fix, test addition, documentation change, or configuration update where the codebase is internally consistent — commit using the **GitHub MCP** (`github-push_files` for multi-file changes, `github-create_or_update_file` for a single file).
+
+Before the first commit in any session, resolve the current branch and repo:
+```powershell
+git --no-pager branch --show-current
+git remote get-url origin   # → owner nikneem, repo floodrush
+```
+
+Commit messages must follow conventional commits and always end with the Co-authored-by trailer:
+```
+<type>(<scope>): <short imperative summary>
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+Types: `feat` · `fix` · `test` · `refactor` · `docs` · `ci` · `chore` · `perf`  
+Scopes: `game-core` · `server-profiles` · `server-levels` · `server-scores` · `api` · `maui` · `aspire` · `shared` · `ci` · `docs`
+
+Do **not** commit partial or broken work. Complete the logical unit first, then commit. See `.github/copilot-instructions.md` for the full commit workflow details.

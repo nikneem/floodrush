@@ -1,0 +1,178 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  # ─── Job 1: Build server/core projects, run tests, enforce coverage ──────────
+  build-and-test:
+    name: Build · Test · Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      # Restore in dependency order. API pulls all server deps transitively;
+      # test projects pull their respective source projects.
+      - name: Restore
+        run: |
+          dotnet restore src/Server/HexMaster.FloodRush.Api/HexMaster.FloodRush.Api.csproj
+          dotnet restore src/Game/HexMaster.FloodRush.Game.Core/HexMaster.FloodRush.Game.Core.csproj
+          dotnet restore src/Aspire/HexMaster.FloodRush.Aspire/HexMaster.FloodRush.Aspire.AppHost/HexMaster.FloodRush.Aspire.AppHost.csproj
+          dotnet restore src/Tests/HexMaster.FloodRush.Game.Core.Tests/HexMaster.FloodRush.Game.Core.Tests.csproj
+          dotnet restore src/Tests/HexMaster.FloodRush.Server.Profiles.Tests/HexMaster.FloodRush.Server.Profiles.Tests.csproj
+          dotnet restore src/Tests/HexMaster.FloodRush.Server.Levels.Tests/HexMaster.FloodRush.Server.Levels.Tests.csproj
+
+      # Build the full production dependency graph (API → all server modules →
+      # ServiceDefaults → SharedContracts). Game.Core and AppHost are separate roots.
+      - name: Build — server & core
+        run: |
+          dotnet build src/Server/HexMaster.FloodRush.Api/HexMaster.FloodRush.Api.csproj \
+            --no-restore --configuration Release
+          dotnet build src/Game/HexMaster.FloodRush.Game.Core/HexMaster.FloodRush.Game.Core.csproj \
+            --no-restore --configuration Release
+          dotnet build src/Aspire/HexMaster.FloodRush.Aspire/HexMaster.FloodRush.Aspire.AppHost/HexMaster.FloodRush.Aspire.AppHost.csproj \
+            --no-restore --configuration Release
+
+      # Run each test project in isolation and collect coverage for its own
+      # assembly only, so the merged report cleanly maps module → coverage.
+      - name: Test — HexMaster.FloodRush.Game.Core
+        run: |
+          dotnet test \
+            src/Tests/HexMaster.FloodRush.Game.Core.Tests/HexMaster.FloodRush.Game.Core.Tests.csproj \
+            --no-restore \
+            --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --results-directory TestResults/Game.Core \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[HexMaster.FloodRush.Game.Core]*" \
+               DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format="cobertura"
+
+      - name: Test — HexMaster.FloodRush.Server.Profiles
+        run: |
+          dotnet test \
+            src/Tests/HexMaster.FloodRush.Server.Profiles.Tests/HexMaster.FloodRush.Server.Profiles.Tests.csproj \
+            --no-restore \
+            --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --results-directory TestResults/Server.Profiles \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[HexMaster.FloodRush.Server.Profiles]*" \
+               DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format="cobertura"
+
+      - name: Test — HexMaster.FloodRush.Server.Levels
+        run: |
+          dotnet test \
+            src/Tests/HexMaster.FloodRush.Server.Levels.Tests/HexMaster.FloodRush.Server.Levels.Tests.csproj \
+            --no-restore \
+            --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --results-directory TestResults/Server.Levels \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[HexMaster.FloodRush.Server.Levels]*" \
+               DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format="cobertura"
+
+      # Merge per-module Cobertura files into a single report for the gate check.
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Generate merged coverage report
+        run: |
+          reportgenerator \
+            -reports:"TestResults/**/coverage.cobertura.xml" \
+            -targetdir:CoverageReport \
+            -reporttypes:"Cobertura;TextSummary"
+          cat CoverageReport/Summary.txt
+
+      # Vital modules per AGENTS.md: Game.Core, Server.Profiles, Server.Levels,
+      # Server.Scores. Modules with existing coverage data must be ≥ 80%.
+      # A module with no coverage data (no test project yet) emits a warning
+      # but does not fail — add tests to start enforcing the gate for that module.
+      - name: Verify coverage gate (≥ 80% per vital module)
+        run: |
+          python3 << 'EOF'
+          import xml.etree.ElementTree as ET, sys
+
+          THRESHOLD = 0.80
+          VITAL_MODULES = [
+              "HexMaster.FloodRush.Game.Core",
+              "HexMaster.FloodRush.Server.Profiles",
+              "HexMaster.FloodRush.Server.Levels",
+              "HexMaster.FloodRush.Server.Scores",
+          ]
+
+          tree = ET.parse("CoverageReport/Cobertura.xml")
+          root = tree.getroot()
+
+          found = {}
+          for pkg in root.iter("package"):
+              name = pkg.get("name", "")
+              if name in VITAL_MODULES:
+                  found[name] = float(pkg.get("line-rate", 0))
+
+          print("Coverage — vital modules:")
+          failed = []
+          for module in VITAL_MODULES:
+              if module in found:
+                  rate = found[module]
+                  pct = rate * 100
+                  icon = "✅" if rate >= THRESHOLD else "❌"
+                  print(f"  {icon} {module}: {pct:.1f}%")
+                  if rate < THRESHOLD:
+                      failed.append(f"{module}: {pct:.1f}% (minimum: 80%)")
+              else:
+                  print(f"  ⚠️  {module}: no coverage data (no test project yet — gate not enforced)")
+
+          if failed:
+              print("\nCoverage gate FAILED:")
+              for f in failed:
+                  print(f"  • {f}")
+              sys.exit(1)
+
+          print("\nAll covered vital modules meet the 80% threshold. ✅")
+          EOF
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: CoverageReport/
+          retention-days: 14
+
+  # ─── Job 2: Build MAUI for Windows ───────────────────────────────────────────
+  build-maui:
+    name: Build · MAUI (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      # MAUI workload must be installed before restore so MSBuild targets
+      # are available when NuGet resolves MAUI-specific packages.
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows
+
+      - name: Restore MAUI
+        run: dotnet restore src/Game/HexMaster.FloodRush.Game/HexMaster.FloodRush.Game.csproj
+
+      - name: Build MAUI — Windows target
+        run: |
+          dotnet build src/Game/HexMaster.FloodRush.Game/HexMaster.FloodRush.Game.csproj `
+            --no-restore `
+            --configuration Release `
+            --framework net10.0-windows10.0.19041.0

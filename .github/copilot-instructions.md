@@ -87,3 +87,72 @@ Read `docs\product-vision-and-scope.md` for the plain-language product framing a
 - Update the spec when behavior intentionally changes.
 - Add or update unit tests for core logic and keep the 80% coverage target intact for the core projects.
 - Keep user-visible text and terminology consistent: use `fluid basin`, `split section`, `finish point`, and `flow speed indicator`.
+
+## Git commit workflow
+
+After each **logical step** — a self-contained unit of work where the codebase compiles and is internally consistent — commit the changes using the GitHub MCP.
+
+### What counts as a logical step
+- Implementing a complete feature slice (command + handler + registration)
+- Adding or updating a set of tests for a feature
+- Fixing a bug (source fix + any test update together)
+- Adding or updating documentation or specs
+- Changing configuration, CI, or tooling
+- A refactor that leaves behaviour identical
+
+Do **not** commit partial work (broken build, unfinished handler, test that fails by design mid-task). Complete the logical unit first, then commit.
+
+### How to commit with the GitHub MCP
+
+1. **Resolve the current branch and repo** before the first commit in any session:
+   ```powershell
+   git --no-pager branch --show-current
+   git remote get-url origin
+   ```
+   Parse `owner` and `repo` from the remote URL (e.g. `https://github.com/nikneem/floodrush` → owner `nikneem`, repo `floodrush`).
+
+2. **Use `github-push_files`** to push all files changed in the logical step as a single commit:
+   - `owner` and `repo` from step 1
+   - `branch` from step 1
+   - `files` — every file created or modified in this step (use exact repo-relative paths with forward slashes)
+   - `message` — a conventional commit message (see format below)
+
+3. **Use `github-create_or_update_file`** only when exactly one file changed.  
+   Provide the `sha` of the file being replaced; obtain it with:
+   ```powershell
+   git rev-parse HEAD:<repo-relative/path/to/file>
+   ```
+
+### Commit message format
+
+```
+<type>(<scope>): <short imperative summary>
+
+<optional body — what changed and why>
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+| Type | When to use |
+|---|---|
+| `feat` | New behaviour visible to users or callers |
+| `fix` | Bug correction |
+| `test` | Adding or updating tests only |
+| `refactor` | Internal restructure with no behaviour change |
+| `docs` | Documentation or spec updates |
+| `ci` | CI/CD or workflow changes |
+| `chore` | Config, tooling, dependencies |
+| `perf` | Performance improvement |
+
+**Scope** should be the short project or layer name: `game-core`, `server-profiles`, `server-levels`, `server-scores`, `api`, `maui`, `aspire`, `shared`, `ci`, `docs`.
+
+Example:
+```
+feat(server-levels): add released-level catalog endpoint
+
+Adds GET /levels returning only levels released to the authenticated
+player profile. Handler filters by ReleaseState and PlayerTier from
+Azure Table Storage.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
